@@ -1,5 +1,5 @@
-"""
-inbox_response.py — Response schemas for inbox endpoints.
+﻿"""
+inbox_response.py â€” Response schemas for inbox endpoints.
 
 Defines InboxResponse and InboxListResponse models.
 """
@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from core.models.inbox_model import InboxStatus
+from core.models.wms_models import InboxStatus
 
 
 class InboxResponse(BaseModel):
@@ -30,3 +30,4 @@ class InboxListResponse(BaseModel):
 
     shipments: list[InboxResponse] = Field(..., description="List of inbox shipments")
     total: int = Field(..., description="Total record count")
+

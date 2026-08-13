@@ -149,3 +149,23 @@ if __name__ == "__main__":
         await close_mongo_connection()
 
     asyncio.run(_run())
+
+
+# ====== INIT_INDEXES LEGACY ENTRYPOINT (DEPRECATED) ======
+# The following script functionality has been merged from scripts/init_indexes.py
+# and retained for backward compatibility.
+
+async def init_indexes_and_list_collections() -> None:
+    """
+    Initialize MongoDB indexes and list all collections.
+
+    Executes init_db to create indexes and then lists all database collections.
+    This function is retained for backward compatibility with the legacy init_indexes.py script.
+    """
+    await init_db()
+    db = MongoDatabase()
+    collections = await db.list_collection_names()
+    print("Database index initialization completed successfully.")
+    print("Collections list:")
+    for col in sorted(collections):
+        print(f" - {col}")

@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from core import logger
 from core.apis.schemas.responses.health_response import HealthResponse
-from core.controllers.health_controller import HealthController
+from core.controllers.wms_controller import HealthController
 
 health_router = APIRouter()
 logging = logger(__name__)

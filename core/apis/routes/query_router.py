@@ -10,7 +10,7 @@ from commons.auth import get_current_user
 from core import logger
 from core.apis.schemas.requests.query_request import NLQueryRequest
 from core.apis.schemas.responses.query_response import NLQueryResponse
-from core.controllers.nl_query_controller import NLQueryController
+from core.controllers.wms_controller import NLQueryController
 
 query_router = APIRouter(tags=["Natural Language Query"])
 logging = logger(__name__)

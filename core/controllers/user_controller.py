@@ -12,10 +12,10 @@ from pytz import timezone
 
 from commons.auth import hash_password
 from core import logger
-from core.cruds.facility_crud import CRUDWarehouse
+from core.cruds.wms_crud import CRUDWarehouse
 from core.cruds.user_crud import CRUDUser
 from core.models.user_model import UserRole, UserStatus
-from core.services.audit_service import get_audit_service
+from core.services.wms_service import get_audit_service
 
 logging = logger(__name__)
 

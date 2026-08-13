@@ -1,5 +1,5 @@
-"""
-test_reports.py — Unit and integration tests for Phase 4 Reporting and Exports.
+﻿"""
+test_reports.py â€” Unit and integration tests for Phase 4 Reporting and Exports.
 
 Tests executive summary metrics, detail feeds, stock totals aggregation, and CSV/XLSX file downloads.
 """
@@ -42,7 +42,7 @@ async def test_get_reports_summary(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=owner_user)), \
-         patch("core.controllers.report_controller.ReportController.get_summary", AsyncMock(return_value=fake_summary)):
+         patch("core.controllers.wms_controller.ReportController.get_summary", AsyncMock(return_value=fake_summary)):
 
         mock_decode.return_value = {"sub": owner_user["id"], "type": "access", "role": "OWNER"}
         headers = {"Authorization": "Bearer valid_owner_token"}
@@ -91,7 +91,7 @@ async def test_get_reports_stock(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=manager_user)), \
-         patch("core.controllers.report_controller.ReportController.get_stock_totals", AsyncMock(return_value=fake_stock_payload)):
+         patch("core.controllers.wms_controller.ReportController.get_stock_totals", AsyncMock(return_value=fake_stock_payload)):
 
         mock_decode.return_value = {"sub": manager_user["id"], "type": "access", "role": "MANAGER"}
         headers = {"Authorization": "Bearer valid_manager_token"}
@@ -121,7 +121,7 @@ async def test_export_report_csv(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=owner_user)), \
-         patch("core.controllers.report_controller.ReportController.export_report", AsyncMock(return_value=(fake_csv_bytes, "text/csv", "stock_report.csv"))):
+         patch("core.controllers.wms_controller.ReportController.export_report", AsyncMock(return_value=(fake_csv_bytes, "text/csv", "stock_report.csv"))):
 
         mock_decode.return_value = {"sub": owner_user["id"], "type": "access", "role": "OWNER"}
         headers = {"Authorization": "Bearer valid_owner_token"}
@@ -131,3 +131,4 @@ async def test_export_report_csv(async_client: AsyncClient):
         assert response.headers["content-type"] == "text/csv; charset=utf-8" or response.headers["content-type"] == "text/csv"
         assert "attachment" in response.headers["content-disposition"]
         assert b"Widget A" in response.content
+

@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from commons.auth import require_roles
 from core import logger
 from core.apis.schemas.responses.audit_response import AuditLogListResponse
-from core.controllers.audit_controller import AuditController
+from core.controllers.wms_controller import AuditController
 
 audit_router = APIRouter(prefix="/audit", tags=["Audit Log"])
 logging = logger(__name__)

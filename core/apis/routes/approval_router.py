@@ -13,7 +13,7 @@ from core.apis.schemas.responses.ticket_response import (
     ApprovalQueueResponse,
     TicketResponse,
 )
-from core.controllers.ticket_controller import TicketController
+from core.controllers.wms_controller import TicketController
 
 approval_router = APIRouter(tags=["Approval Queue"])
 logging = logger(__name__)

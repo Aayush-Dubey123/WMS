@@ -15,7 +15,7 @@ from core.apis.schemas.responses.report_response import (
     ReportSummaryResponse,
     StockTotalsResponse,
 )
-from core.controllers.report_controller import ReportController
+from core.controllers.wms_controller import ReportController
 
 report_router = APIRouter(prefix="/reports", tags=["Reporting & Export"])
 logging = logger(__name__)

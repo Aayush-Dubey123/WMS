@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from commons.auth import get_current_user
 from core import logger
 from core.apis.schemas.responses.vision_response import VisionMeasureResponse
-from core.controllers.vision_controller import VisionController
+from core.controllers.wms_controller import VisionController
 
 vision_router = APIRouter(prefix="/vision", tags=["Vision Measurement"])
 logging = logger(__name__)

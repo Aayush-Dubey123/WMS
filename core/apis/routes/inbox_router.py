@@ -14,7 +14,7 @@ from core.apis.schemas.requests.inbox_request import (
     InboxRevertRequest,
 )
 from core.apis.schemas.responses.inbox_response import InboxListResponse, InboxResponse
-from core.controllers.inbox_controller import InboxController
+from core.controllers.wms_controller import InboxController
 
 inbox_router = APIRouter(prefix="/inbox", tags=["Inbox & Announcements"])
 logging = logger(__name__)

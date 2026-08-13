@@ -7,7 +7,7 @@ Defines TicketResponse, TicketListResponse, and ApprovalQueueResponse models.
 
 from pydantic import BaseModel, Field
 
-from core.models.ticket_model import TicketStatus
+from core.models.wms_models import TicketStatus
 
 
 class TicketResponse(BaseModel):

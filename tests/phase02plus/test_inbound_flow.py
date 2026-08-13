@@ -1,5 +1,5 @@
-"""
-test_inbound_flow.py — Integration test suite for Phase 2 Inbound Lifecycle.
+﻿"""
+test_inbound_flow.py â€” Integration test suite for Phase 2 Inbound Lifecycle.
 
 Tests full flow: pre-announcement -> manager acceptance -> arrival ticket generation ->
 idempotent item scanning -> inspection submission -> manager approval -> storage assignment.
@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from httpx import AsyncClient
 
-from core.models.inbox_model import InboxStatus
-from core.models.ticket_model import TicketStatus
+from core.models.wms_models import InboxStatus
+from core.models.wms_models import TicketStatus
 
 
 @pytest.mark.asyncio
@@ -91,19 +91,19 @@ async def test_end_to_end_inbound_flow(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(side_effect=lambda id: staff_user if id == staff_user["id"] else manager_user)), \
-         patch("core.cruds.facility_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value=wh_doc)), \
-         patch("core.cruds.inbox_crud.CRUDInbox.get_by_tracking", AsyncMock(return_value=inbox_doc)), \
-         patch("core.controllers.arrival_controller.ticket_generator.generate_ticket_id", AsyncMock(return_value="RNO-20260813-001")), \
-         patch("core.cruds.ticket_crud.CRUDTicket.create", AsyncMock(return_value=ticket_doc)), \
-         patch("core.cruds.ticket_crud.CRUDTicket.get_by_ticket_id", AsyncMock(return_value=ticket_doc)), \
-         patch("core.cruds.ticket_crud.CRUDTicket.update", AsyncMock(return_value=ticket_doc)), \
-         patch("core.cruds.item_crud.CRUDItem.get_next_unit_seq", AsyncMock(return_value=1)), \
-         patch("core.cruds.item_crud.CRUDItem.create", AsyncMock(return_value=item_doc)), \
-         patch("core.cruds.item_crud.CRUDItem.get_items_by_ticket", AsyncMock(return_value=[item_doc])), \
-         patch("core.cruds.item_crud.CRUDItem.update_status_by_ticket", AsyncMock(return_value=1)), \
-         patch("core.cruds.item_crud.CRUDItem.update_item", AsyncMock(return_value=item_doc)), \
-         patch("core.services.idempotency_service.IdempotencyService.lock_key", AsyncMock(return_value=True)), \
-         patch("core.services.audit_service.CRUDAuditLog.create", AsyncMock(return_value={"id": "audit_ok"})):
+         patch("core.cruds.wms_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value=wh_doc)), \
+         patch("core.cruds.wms_crud.CRUDInbox.get_by_tracking", AsyncMock(return_value=inbox_doc)), \
+         patch("core.controllers.wms_controller.ticket_generator.generate_ticket_id", AsyncMock(return_value="RNO-20260813-001")), \
+         patch("core.cruds.wms_crud.CRUDTicket.create", AsyncMock(return_value=ticket_doc)), \
+         patch("core.cruds.wms_crud.CRUDTicket.get_by_ticket_id", AsyncMock(return_value=ticket_doc)), \
+         patch("core.cruds.wms_crud.CRUDTicket.update", AsyncMock(return_value=ticket_doc)), \
+         patch("core.cruds.wms_crud.CRUDItem.get_next_unit_seq", AsyncMock(return_value=1)), \
+         patch("core.cruds.wms_crud.CRUDItem.create", AsyncMock(return_value=item_doc)), \
+         patch("core.cruds.wms_crud.CRUDItem.get_items_by_ticket", AsyncMock(return_value=[item_doc])), \
+         patch("core.cruds.wms_crud.CRUDItem.update_status_by_ticket", AsyncMock(return_value=1)), \
+         patch("core.cruds.wms_crud.CRUDItem.update_item", AsyncMock(return_value=item_doc)), \
+         patch("core.services.wms_service.IdempotencyService.lock_key", AsyncMock(return_value=True)), \
+         patch("core.services.wms_service.CRUDAuditLog.create", AsyncMock(return_value={"id": "audit_ok"})):
 
         mock_decode.return_value = {"sub": staff_user["id"], "type": "access", "role": "STAFF"}
 
@@ -190,10 +190,10 @@ async def test_unannounced_arrival_no_ticket_flag(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=staff_user)), \
-         patch("core.cruds.facility_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value=wh_doc)), \
-         patch("core.controllers.arrival_controller.ticket_generator.generate_ticket_id", AsyncMock(return_value="LAX-20260813-001")), \
-         patch("core.cruds.ticket_crud.CRUDTicket.create", AsyncMock(return_value=unannounced_ticket)), \
-         patch("core.services.audit_service.CRUDAuditLog.create", AsyncMock(return_value={"id": "audit_arr"})):
+         patch("core.cruds.wms_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value=wh_doc)), \
+         patch("core.controllers.wms_controller.ticket_generator.generate_ticket_id", AsyncMock(return_value="LAX-20260813-001")), \
+         patch("core.cruds.wms_crud.CRUDTicket.create", AsyncMock(return_value=unannounced_ticket)), \
+         patch("core.services.wms_service.CRUDAuditLog.create", AsyncMock(return_value={"id": "audit_arr"})):
 
         mock_decode.return_value = {"sub": staff_user["id"], "type": "access", "role": "STAFF"}
         headers = {"Authorization": "Bearer valid_staff_token"}
@@ -219,9 +219,9 @@ async def test_duplicate_submission_idempotency(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT", return_value={"sub": "staff1", "type": "access", "role": "STAFF"}), \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=staff_user)), \
-         patch("core.cruds.ticket_crud.CRUDTicket.get_by_ticket_id", AsyncMock(return_value={"id": "t1", "ticket_id": "RNO-20260813-001", "status": "ARRIVED", "warehouse_id": "wh1"})), \
-         patch("core.controllers.ticket_controller.get_idempotency_service", return_value=AsyncMock(lock_key=AsyncMock(side_effect=HTTPException(status_code=409, detail="Duplicate submission")))), \
-         patch("core.controllers.ticket_controller.get_audit_service", return_value=AsyncMock()):
+         patch("core.cruds.wms_crud.CRUDTicket.get_by_ticket_id", AsyncMock(return_value={"id": "t1", "ticket_id": "RNO-20260813-001", "status": "ARRIVED", "warehouse_id": "wh1"})), \
+         patch("core.controllers.wms_controller.get_idempotency_service", return_value=AsyncMock(lock_key=AsyncMock(side_effect=HTTPException(status_code=409, detail="Duplicate submission")))), \
+         patch("core.controllers.wms_controller.get_audit_service", return_value=AsyncMock()):
 
         headers = {
             "Authorization": "Bearer valid_token",
@@ -237,4 +237,8 @@ async def test_duplicate_submission_idempotency(async_client: AsyncClient):
         resp = await async_client.post("/tickets/RNO-20260813-001/items", json=item_payload, headers=headers)
         assert resp.status_code == 409
         assert "Duplicate submission" in resp.json()["detail"]
+
+
+
+
 

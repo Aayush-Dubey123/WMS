@@ -1,5 +1,5 @@
-"""
-test_ai_and_api_keys.py — Integration test suite for Phase 5 AI features & API key administration.
+﻿"""
+test_ai_and_api_keys.py â€” Integration test suite for Phase 5 AI features & API key administration.
 
 Tests voice transcription, LLM draft parsing, draft confirmation writing through Phase 2 pipeline,
 vision measurement, natural language stock search, and API key management.
@@ -66,10 +66,10 @@ async def test_voice_pipeline_flow(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=staff_user)), \
-         patch("core.cruds.voice_draft_crud.CRUDVoiceDraft.create", AsyncMock(return_value=draft_doc)), \
-         patch("core.cruds.voice_draft_crud.CRUDVoiceDraft.get_by_id", AsyncMock(return_value=draft_doc)), \
-         patch("core.cruds.voice_draft_crud.CRUDVoiceDraft.update", AsyncMock(return_value=draft_doc)), \
-         patch("core.controllers.ticket_controller.TicketController.log_item_scan", AsyncMock(return_value=logged_item)):
+         patch("core.cruds.wms_crud.CRUDVoiceDraft.create", AsyncMock(return_value=draft_doc)), \
+         patch("core.cruds.wms_crud.CRUDVoiceDraft.get_by_id", AsyncMock(return_value=draft_doc)), \
+         patch("core.cruds.wms_crud.CRUDVoiceDraft.update", AsyncMock(return_value=draft_doc)), \
+         patch("core.controllers.wms_controller.TicketController.log_item_scan", AsyncMock(return_value=logged_item)):
 
         mock_decode.return_value = {"sub": staff_user["id"], "type": "access", "role": "STAFF"}
         headers = {"Authorization": "Bearer valid_staff_token"}
@@ -124,7 +124,7 @@ async def test_vision_measure(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=staff_user)), \
-         patch("core.services.vision_service.VisionService.measure_package", AsyncMock(return_value=vision_payload)):
+         patch("core.services.ai_service.VisionService.measure_package", AsyncMock(return_value=vision_payload)):
 
         mock_decode.return_value = {"sub": staff_user["id"], "type": "access", "role": "STAFF"}
         headers = {"Authorization": "Bearer valid_staff_token"}
@@ -161,7 +161,7 @@ async def test_nl_stock_query(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=manager_user)), \
-         patch("core.services.nl_query_service.NLQueryService.execute_query", AsyncMock(return_value=query_res)):
+         patch("core.services.ai_service.NLQueryService.execute_query", AsyncMock(return_value=query_res)):
 
         mock_decode.return_value = {"sub": manager_user["id"], "type": "access", "role": "MANAGER"}
         headers = {"Authorization": "Bearer valid_manager_token"}
@@ -202,9 +202,9 @@ async def test_api_key_management_flow(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=owner_user)), \
-         patch("core.cruds.api_key_crud.CRUDApiKey.create", AsyncMock(return_value=created_key_doc)), \
-         patch("core.cruds.api_key_crud.CRUDApiKey.list_keys", AsyncMock(return_value=[created_key_doc])), \
-         patch("core.cruds.api_key_crud.CRUDApiKey.revoke", AsyncMock(return_value=revoked_key_doc)):
+         patch("core.cruds.wms_crud.CRUDApiKey.create", AsyncMock(return_value=created_key_doc)), \
+         patch("core.cruds.wms_crud.CRUDApiKey.list_keys", AsyncMock(return_value=[created_key_doc])), \
+         patch("core.cruds.wms_crud.CRUDApiKey.revoke", AsyncMock(return_value=revoked_key_doc)):
 
         mock_decode.return_value = {"sub": owner_user["id"], "type": "access", "role": "OWNER"}
         headers = {"Authorization": "Bearer valid_owner_token"}
@@ -237,7 +237,7 @@ async def test_nl_query_rejects_unlisted_templates(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT", return_value={"sub": "mgr1", "type": "access", "role": "MANAGER"}), \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=manager_user)), \
-         patch("core.services.nl_query_service.NLQueryService.execute_query", AsyncMock(side_effect=ValueError("Query does not match any allow-listed template"))):
+         patch("core.services.ai_service.NLQueryService.execute_query", AsyncMock(side_effect=ValueError("Query does not match any allow-listed template"))):
 
         headers = {"Authorization": "Bearer token"}
         resp = await async_client.post("/query", json={"query": "DROP DATABASE wms;"}, headers=headers)
@@ -252,4 +252,7 @@ async def test_api_key_scope_enforcement(async_client: AsyncClient):
     """
     resp = await async_client.get("/reports/summary?date=2026-08-13", headers={"X-API-Key": "invalid_key"})
     assert resp.status_code == 401
+
+
+
 

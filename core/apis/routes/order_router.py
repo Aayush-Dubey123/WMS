@@ -18,7 +18,7 @@ from core.apis.schemas.responses.order_response import (
     PicklistResponse,
     ShippingLabelResponse,
 )
-from core.controllers.order_controller import OrderController
+from core.controllers.wms_controller import OrderController
 
 order_router = APIRouter(prefix="/orders", tags=["Orders & Fulfillment"])
 logging = logger(__name__)

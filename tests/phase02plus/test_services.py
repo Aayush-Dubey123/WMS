@@ -1,5 +1,5 @@
-"""
-test_services.py — Direct unit tests for core services to ensure high code coverage.
+﻿"""
+test_services.py â€” Direct unit tests for core services to ensure high code coverage.
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -8,13 +8,13 @@ import pytest
 from fastapi import HTTPException, UploadFile
 from pymongo.errors import DuplicateKeyError
 
-from core.services.audit_service import AuditService, get_audit_service
-from core.services.export_service import ExportService, get_export_service
-from core.services.idempotency_service import IdempotencyService, get_idempotency_service
-from core.services.nl_query_service import NLQueryService, get_nl_query_service
-from core.services.storage_service import LocalStorageService, get_storage_service
-from core.services.vision_service import VisionService, get_vision_service
-from core.services.voice_service import VoiceService, get_voice_service
+from core.services.wms_service import AuditService, get_audit_service
+from core.services.wms_service import IdempotencyService, get_idempotency_service
+from core.services.integration_service import ExportService, get_export_service
+from core.services.integration_service import LocalStorageService, get_storage_service
+from core.services.ai_service import NLQueryService, get_nl_query_service
+from core.services.ai_service import VisionService, get_vision_service
+from core.services.ai_service import VoiceService, get_voice_service
 
 
 def test_export_service_csv():
@@ -68,7 +68,7 @@ async def test_vision_service():
 async def test_nl_query_service():
     service = NLQueryService()
 
-    with patch("core.services.nl_query_service.MongoDatabase") as mock_db:
+    with patch("core.services.ai_service.MongoDatabase") as mock_db:
         mock_cursor = AsyncMock()
         mock_cursor.to_list = AsyncMock(return_value=[{"_id": "Widget A", "count": 5}])
         mock_db.return_value.items.aggregate.return_value = mock_cursor
@@ -89,7 +89,7 @@ async def test_nl_query_service():
 async def test_idempotency_service():
     service = IdempotencyService()
 
-    with patch("core.services.idempotency_service.MongoDatabase") as mock_db:
+    with patch("core.services.wms_service.MongoDatabase") as mock_db:
         mock_db.return_value.idempotency_keys.insert_one = AsyncMock(return_value=True)
         res = await service.lock_key("key1", "/endpoint", "actor1")
         assert res is True
@@ -105,7 +105,7 @@ async def test_idempotency_service():
 @pytest.mark.asyncio
 async def test_audit_service():
     service = AuditService()
-    with patch("core.services.audit_service.CRUDAuditLog.create", AsyncMock(return_value={"id": "audit1"})):
+    with patch("core.services.wms_service.CRUDAuditLog.create", AsyncMock(return_value={"id": "audit1"})):
         await service.log_mutation(actor={"id": "usr1"}, action="TEST", collection="test", doc_id="1")
 
     assert get_audit_service() is not None
@@ -121,3 +121,4 @@ async def test_voice_service():
     assert parsed["parsed_data"]["product_name"] == "Scanned Item"
 
     assert get_voice_service() is not None
+

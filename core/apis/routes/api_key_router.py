@@ -14,7 +14,7 @@ from core.apis.schemas.responses.api_key_response import (
     ApiKeyItemResponse,
     ApiKeyListResponse,
 )
-from core.controllers.api_key_controller import ApiKeyController
+from core.controllers.wms_controller import ApiKeyController
 
 api_key_router = APIRouter(prefix="/api-keys", tags=["API Key Scripting Integration"])
 logging = logger(__name__)

@@ -1,18 +1,28 @@
 """
-storage_service.py — Local volume file storage service for item photo uploads.
+integration_service.py — Consolidated integration services for storage and export operations.
 
-Saves uploaded product inspection images locally under uploads/ directory.
+Merges integration-related service facades:
+- LocalStorageService: Local volume file storage for item photo uploads
+- ExportService: File export service generating CSV and Excel files
 """
 
+import csv
+import io
 import os
 import uuid
+from typing import Any
 
 import aiofiles
+import openpyxl
 from fastapi import HTTPException, UploadFile, status
 
 from core import logger
 
 logging = logger(__name__)
+
+
+# ====== LOCAL STORAGE SERVICE ======
+
 UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
 
 
@@ -72,13 +82,80 @@ _storage_service_instance: LocalStorageService | None = None
 
 
 def get_storage_service() -> LocalStorageService:
-    """
-    Retrieve global LocalStorageService instance.
-
-    Returns:
-        LocalStorageService: Shared storage service instance.
-    """
+    """Retrieve global LocalStorageService instance."""
     global _storage_service_instance
     if _storage_service_instance is None:
         _storage_service_instance = LocalStorageService()
     return _storage_service_instance
+
+
+# ====== EXPORT SERVICE ======
+
+class ExportService:
+    """Service facade generating downloadable report files."""
+
+    def generate_csv(self, records: list[dict[str, Any]]) -> bytes:
+        """
+        Convert list of dictionary records into CSV byte stream.
+
+        Args:
+            records (List[Dict[str, Any]]): List of row dictionaries.
+
+        Returns:
+            bytes: UTF-8 encoded CSV file bytes.
+        """
+        logging.info("Executing ExportService.generate_csv")
+        if not records:
+            return b""
+
+        output = io.StringIO()
+        fieldnames = list(records[0].keys())
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in records:
+            writer.writerow(row)
+
+        return output.getvalue().encode("utf-8")
+
+    def generate_xlsx(self, records: list[dict[str, Any]], title: str = "Report") -> bytes:
+        """
+        Convert list of dictionary records into Excel (.xlsx) file byte stream using openpyxl.
+
+        Args:
+            records (List[Dict[str, Any]]): List of row dictionaries.
+            title (str): Worksheet title header.
+
+        Returns:
+            bytes: OpenPyXL generated XLSX file bytes.
+        """
+        logging.info("Executing ExportService.generate_xlsx")
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = title[:30]
+
+        if not records:
+            ws.append(["No records found"])
+            stream = io.BytesIO()
+            wb.save(stream)
+            return stream.getvalue()
+
+        headers = list(records[0].keys())
+        ws.append(headers)
+
+        for row in records:
+            ws.append([str(row.get(h, "")) if isinstance(row.get(h), (dict, list)) else row.get(h, "") for h in headers])
+
+        stream = io.BytesIO()
+        wb.save(stream)
+        return stream.getvalue()
+
+
+_export_service_instance: ExportService | None = None
+
+
+def get_export_service() -> ExportService:
+    """Retrieve global ExportService instance."""
+    global _export_service_instance
+    if _export_service_instance is None:
+        _export_service_instance = ExportService()
+    return _export_service_instance

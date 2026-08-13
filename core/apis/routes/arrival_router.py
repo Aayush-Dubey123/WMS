@@ -10,7 +10,7 @@ from commons.auth import get_current_user
 from core import logger
 from core.apis.schemas.requests.arrival_request import ArrivalCreateRequest
 from core.apis.schemas.responses.ticket_response import TicketResponse
-from core.controllers.arrival_controller import ArrivalController
+from core.controllers.wms_controller import ArrivalController
 
 arrival_router = APIRouter(prefix="/arrivals", tags=["Arrivals & Ticketing"])
 logging = logger(__name__)

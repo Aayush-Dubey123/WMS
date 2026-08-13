@@ -1,5 +1,5 @@
-"""
-item_request.py — Request schemas for item barcode scanning and inspection logging.
+﻿"""
+item_request.py â€” Request schemas for item barcode scanning and inspection logging.
 
 Defines Pydantic model for scanning individual item units.
 """
@@ -7,7 +7,7 @@ Defines Pydantic model for scanning individual item units.
 
 from pydantic import BaseModel, Field
 
-from core.models.item_model import DamageDetail
+from core.models.wms_models import DamageDetail
 
 
 class ItemLogRequest(BaseModel):
@@ -22,3 +22,4 @@ class ItemLogRequest(BaseModel):
     damage: DamageDetail | None = Field(
         default_factory=DamageDetail, description="Physical damage details flag and note"
     )
+

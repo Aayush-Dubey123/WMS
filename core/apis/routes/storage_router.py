@@ -13,7 +13,7 @@ from core.apis.schemas.responses.storage_response import (
     StorageLocationListResponse,
     StorageLocationResponse,
 )
-from core.controllers.storage_controller import StorageController
+from core.controllers.wms_controller import StorageController
 
 storage_router = APIRouter(prefix="/storage-locations", tags=["Storage Locations"])
 logging = logger(__name__)

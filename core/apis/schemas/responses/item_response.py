@@ -1,5 +1,5 @@
-"""
-item_response.py — Response schemas for item endpoints.
+﻿"""
+item_response.py â€” Response schemas for item endpoints.
 
 Defines ItemResponse and ItemListResponse models.
 """
@@ -7,8 +7,8 @@ Defines ItemResponse and ItemListResponse models.
 
 from pydantic import BaseModel, Field
 
-from core.models.item_model import DamageDetail
-from core.models.ticket_model import TicketStatus
+from core.models.wms_models import DamageDetail
+from core.models.wms_models import TicketStatus
 
 
 class ItemResponse(BaseModel):
@@ -37,3 +37,4 @@ class ItemListResponse(BaseModel):
 
     items: list[ItemResponse] = Field(..., description="List of item objects")
     total: int = Field(..., description="Total matching record count")
+

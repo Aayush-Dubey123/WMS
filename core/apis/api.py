@@ -14,22 +14,24 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.staticfiles import StaticFiles
 
 from core import logger
-from core.apis.routes.api_key_router import api_key_router
-from core.apis.routes.approval_router import approval_router
-from core.apis.routes.arrival_router import arrival_router
-from core.apis.routes.audit_router import audit_router
-from core.apis.routes.auth_router import auth_router
-from core.apis.routes.facility_router import facility_router
-from core.apis.routes.health_router import health_router
-from core.apis.routes.inbox_router import inbox_router
-from core.apis.routes.order_router import order_router
-from core.apis.routes.query_router import query_router
-from core.apis.routes.report_router import report_router
-from core.apis.routes.storage_router import storage_router
-from core.apis.routes.ticket_router import ticket_router
-from core.apis.routes.user_router import user_router
-from core.apis.routes.vision_router import vision_router
-from core.apis.routes.voice_router import voice_router
+from core.apis.routes.wms_router import (
+    api_key_router,
+    approval_router,
+    arrival_router,
+    audit_router,
+    auth_router,
+    facility_router,
+    health_router,
+    inbox_router,
+    order_router,
+    query_router,
+    report_router,
+    storage_router,
+    ticket_router,
+    user_router,
+    vision_router,
+    voice_router,
+)
 from core.config.settings import settings
 from core.database.database import close_mongo_connection, connect_to_mongo
 from core.database.init_db import init_db

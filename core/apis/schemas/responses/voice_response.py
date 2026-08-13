@@ -1,5 +1,5 @@
-"""
-voice_response.py — Response schemas for voice pipeline endpoints.
+﻿"""
+voice_response.py â€” Response schemas for voice pipeline endpoints.
 
 Defines response models for transcription and draft extraction.
 """
@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from core.models.voice_draft_model import DraftStatus
+from core.models.wms_models import DraftStatus
 
 
 class TranscribeResponse(BaseModel):
@@ -27,3 +27,4 @@ class VoiceDraftResponse(BaseModel):
     confidence_scores: dict[str, float] = Field(..., description="Per-field AI confidence scores")
     status: DraftStatus = Field(..., description="Draft status (DRAFT, CONFIRMED, DISCARDED)")
     created_at: str = Field(..., description="UTC creation timestamp string")
+

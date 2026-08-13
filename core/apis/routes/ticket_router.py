@@ -23,8 +23,8 @@ from core.apis.schemas.responses.item_response import ItemResponse
 from core.apis.schemas.responses.ticket_response import (
     TicketResponse,
 )
-from core.controllers.ticket_controller import TicketController
-from core.services.storage_service import get_storage_service
+from core.controllers.wms_controller import TicketController
+from core.services.integration_service import get_storage_service
 
 ticket_router = APIRouter(tags=["Ticketing, Inspection & Storage"])
 logging = logger(__name__)

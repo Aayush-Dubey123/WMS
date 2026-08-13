@@ -16,7 +16,7 @@ from core.apis.schemas.responses.facility_response import (
     WarehouseListResponse,
     WarehouseResponse,
 )
-from core.controllers.facility_controller import WarehouseController
+from core.controllers.wms_controller import WarehouseController
 
 facility_router = APIRouter(prefix="/warehouses", tags=["Warehouses"])
 logging = logger(__name__)

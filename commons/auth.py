@@ -11,7 +11,7 @@ from typing import Any
 
 import bcrypt
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pytz import timezone
 
@@ -201,3 +201,62 @@ def require_roles(allowed_roles: list[str]):
         return current_user
 
     return role_checker
+
+
+# ====== API KEY AUTHENTICATION ======
+
+def hash_api_key(raw_key: str) -> str:
+    """
+    Hash raw API key string using SHA256.
+
+    Args:
+        raw_key (str): Raw API key string.
+
+    Returns:
+        str: Hashed key string.
+    """
+    import hashlib
+    return hashlib.sha256(raw_key.strip().encode("utf-8")).hexdigest()
+
+
+async def get_api_key_user(x_api_key: str | None = Header(None, alias="X-API-Key")) -> dict[str, Any]:
+    """
+    FastAPI dependency validating API Key header.
+
+    Validates X-API-Key headers against stored hashed API keys.
+
+    Args:
+        x_api_key (Optional[str]): X-API-Key header value.
+
+    Returns:
+        Dict[str, Any]: API key context dictionary containing key metadata and role.
+
+    Raises:
+        HTTPException 401: Invalid or missing API key.
+    """
+    logging.info("Executing get_api_key_user dependency")
+    if not x_api_key:
+        logging.warning("API key dependency check failed: missing X-API-Key header")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API Key header 'X-API-Key' is missing",
+        )
+
+    from core.cruds.wms_crud import CRUDApiKey
+    key_hash = hash_api_key(x_api_key)
+    key_doc = await CRUDApiKey().get_by_hash(key_hash=key_hash)
+    if not key_doc:
+        logging.warning("API key dependency check failed: invalid or revoked API key")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or revoked API key",
+        )
+
+    return {
+        "id": key_doc["created_by"],
+        "email": f"api_key:{key_doc['prefix']}",
+        "role": key_doc["role"],
+        "scopes": key_doc.get("scopes", ["read"]),
+        "is_api_key": True,
+        "status": "ACTIVE",
+    }

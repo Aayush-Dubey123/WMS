@@ -1,12 +1,12 @@
-"""
-order_response.py — Response schemas for order fulfillment endpoints.
+﻿"""
+order_response.py â€” Response schemas for order fulfillment endpoints.
 
 Defines OrderResponse, OrderListResponse, PicklistResponse, and ShippingLabelResponse models.
 """
 
 from pydantic import BaseModel, Field
 
-from core.models.order_model import OrderItemSpec, OrderStatus
+from core.models.wms_models import OrderItemSpec, OrderStatus
 
 
 class OrderResponse(BaseModel):
@@ -58,3 +58,4 @@ class ShippingLabelResponse(BaseModel):
     carrier: str = Field(..., description="Carrier name (e.g. EasyPost / Shippo Stub)")
     tracking_number: str = Field(..., description="Generated tracking number string")
     label_url: str = Field(..., description="URL to download printable shipping label")
+

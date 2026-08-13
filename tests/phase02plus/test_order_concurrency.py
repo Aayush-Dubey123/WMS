@@ -1,5 +1,5 @@
-"""
-test_order_concurrency.py — Integration and concurrency test suite for Phase 3 Outbound Orders.
+﻿"""
+test_order_concurrency.py â€” Integration and concurrency test suite for Phase 3 Outbound Orders.
 
 Tests complete outbound lifecycle: order intake, stock reservation, picklist generation,
 packing, shipping, and concurrent reservation anti-oversell protection.
@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from httpx import AsyncClient
 
-from core.models.order_model import OrderStatus
-from core.models.ticket_model import TicketStatus
+from core.models.wms_models import OrderStatus
+from core.models.wms_models import TicketStatus
 
 
 @pytest.mark.asyncio
@@ -78,11 +78,11 @@ async def test_full_outbound_order_lifecycle(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=staff_user)), \
-         patch("core.cruds.facility_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value={"id": "607f1f77bcf86cd799439022"})), \
-         patch("core.cruds.order_crud.CRUDOrder.get_by_order_id", AsyncMock(side_effect=mock_get_by_order_id)), \
-         patch("core.cruds.order_crud.CRUDOrder.create", AsyncMock(return_value=order_doc)), \
-         patch("core.cruds.order_crud.CRUDOrder.update", AsyncMock(side_effect=lambda id, update_in, session=None: reserved_order_doc if update_in.get("status") == "RESERVED" else (packed_order_doc if update_in.get("status") == "PACKED" else shipped_order_doc))), \
-         patch("core.services.audit_service.CRUDAuditLog.create", AsyncMock(return_value={"id": "audit_ord"})):
+         patch("core.cruds.wms_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value={"id": "607f1f77bcf86cd799439022"})), \
+         patch("core.cruds.wms_crud.CRUDOrder.get_by_order_id", AsyncMock(side_effect=mock_get_by_order_id)), \
+         patch("core.cruds.wms_crud.CRUDOrder.create", AsyncMock(return_value=order_doc)), \
+         patch("core.cruds.wms_crud.CRUDOrder.update", AsyncMock(side_effect=lambda id, update_in, session=None: reserved_order_doc if update_in.get("status") == "RESERVED" else (packed_order_doc if update_in.get("status") == "PACKED" else shipped_order_doc))), \
+         patch("core.services.wms_service.CRUDAuditLog.create", AsyncMock(return_value={"id": "audit_ord"})):
 
         mock_decode.return_value = {"sub": staff_user["id"], "type": "access", "role": "STAFF"}
         headers = {"Authorization": "Bearer valid_staff_token"}
@@ -102,8 +102,8 @@ async def test_full_outbound_order_lifecycle(async_client: AsyncClient):
         order_lookup_store["doc"] = order_doc
 
         # Step 2: Reserve Stock
-        with patch("core.controllers.order_controller.MongoDatabase") as mock_db, \
-             patch("core.controllers.order_controller.get_mongo_client") as mock_client:
+        with patch("core.controllers.wms_controller.MongoDatabase") as mock_db, \
+             patch("core.controllers.wms_controller.get_mongo_client") as mock_client:
 
             # Mock session context manager
             mock_session = AsyncMock()
@@ -130,7 +130,7 @@ async def test_full_outbound_order_lifecycle(async_client: AsyncClient):
         order_lookup_store["doc"] = reserved_order_doc
 
         # Step 3: Get Picklist
-        with patch("core.controllers.order_controller.MongoDatabase") as mock_db:
+        with patch("core.controllers.wms_controller.MongoDatabase") as mock_db:
             mock_cursor = AsyncMock()
             mock_cursor.to_list = AsyncMock(return_value=[stored_item])
             mock_db.return_value.items.find.return_value = mock_cursor
@@ -160,7 +160,7 @@ async def test_full_outbound_order_lifecycle(async_client: AsyncClient):
         assert "tracking_number" in label_resp.json()
 
         # Step 6: Ship Order
-        with patch("core.controllers.order_controller.MongoDatabase") as mock_db:
+        with patch("core.controllers.wms_controller.MongoDatabase") as mock_db:
             mock_db.return_value.items.update_many = AsyncMock(return_value=AsyncMock(modified_count=1))
             ship_resp = await async_client.post("/orders/ORD-1001/ship", headers=headers)
             assert ship_resp.status_code == 200
@@ -201,11 +201,11 @@ async def test_concurrent_reserve_parallel_requests_one_success_one_409(async_cl
 
     with patch("commons.auth.decodeJWT", return_value={"sub": "staff1", "type": "access", "role": "STAFF"}), \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=staff_user)), \
-         patch("core.cruds.order_crud.CRUDOrder.get_by_order_id", AsyncMock(return_value=order_doc)), \
-         patch("core.cruds.order_crud.CRUDOrder.update", AsyncMock(return_value=dict(order_doc, status="RESERVED"))), \
-         patch("core.controllers.order_controller.get_audit_service", return_value=AsyncMock()), \
-         patch("core.controllers.order_controller.MongoDatabase") as mock_db, \
-         patch("core.controllers.order_controller.get_mongo_client") as mock_client:
+         patch("core.cruds.wms_crud.CRUDOrder.get_by_order_id", AsyncMock(return_value=order_doc)), \
+         patch("core.cruds.wms_crud.CRUDOrder.update", AsyncMock(return_value=dict(order_doc, status="RESERVED"))), \
+         patch("core.controllers.wms_controller.get_audit_service", return_value=AsyncMock()), \
+         patch("core.controllers.wms_controller.MongoDatabase") as mock_db, \
+         patch("core.controllers.wms_controller.get_mongo_client") as mock_client:
 
         mock_session = AsyncMock()
         mock_session.__aenter__.return_value = mock_session
@@ -229,4 +229,8 @@ async def test_concurrent_reserve_parallel_requests_one_success_one_409(async_cl
         res2 = await async_client.post("/orders/ORD-PARALLEL/reserve", headers=headers)
         assert res2.status_code == 409
         assert "Insufficient stock" in res2.json()["detail"]
+
+
+
+
 

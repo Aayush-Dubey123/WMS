@@ -17,7 +17,7 @@ from core.apis.schemas.responses.voice_response import (
     TranscribeResponse,
     VoiceDraftResponse,
 )
-from core.controllers.voice_controller import VoiceController
+from core.controllers.wms_controller import VoiceController
 
 voice_router = APIRouter(prefix="/voice", tags=["Voice Pipeline"])
 logging = logger(__name__)
