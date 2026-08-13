@@ -1,0 +1,1968 @@
+"""
+wms_router.py — Consolidated WMS routers aggregator.
+
+Re-exports all 16 WMS + auth + user routers for centralized registration in api.py.
+"""
+
+from core.apis.routes.auth_router import auth_router
+from core.apis.routes.user_router import user_router
+
+
+# ====== API_KEY ROUTER ======
+"""
+api_key_router.py — API Key administration routes.
+
+Exposes endpoints for POST /api-keys, GET /api-keys, and DELETE /api-keys/{id}.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from commons.auth import require_roles
+from core import logger
+from core.apis.schemas.requests.wms_request import ApiKeyCreateRequest
+from core.apis.schemas.responses.wms_response import (
+    ApiKeyCreatedResponse,
+    ApiKeyItemResponse,
+    ApiKeyListResponse,
+)
+from core.controllers.wms_controller import ApiKeyController
+
+api_key_router = APIRouter(prefix="/api-keys", tags=["API Key Scripting Integration"])
+logging = logger(__name__)
+
+
+@api_key_router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ApiKeyCreatedResponse,
+)
+async def create_api_key(
+    request: ApiKeyCreateRequest,
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Generate a new scoped API Key for external script integration.
+
+    Returns the raw secret key ONCE upon creation.
+
+    Args:
+        request (ApiKeyCreateRequest): Key creation parameters.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        ApiKeyCreatedResponse: Created key object with raw_key.
+    """
+    try:
+        logging.info("Calling POST /api-keys endpoint")
+        response = await ApiKeyController().create_key(
+            key_data=request.model_dump(),
+            current_user=current_user,
+        )
+        return ApiKeyCreatedResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /api-keys endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /api-keys endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@api_key_router.get(
+    "",
+    status_code=status.HTTP_200_OK,
+    response_model=ApiKeyListResponse,
+)
+async def list_api_keys(
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    List active and revoked API keys created by current user.
+
+    Args:
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        ApiKeyListResponse: List of API key items (without raw secrets).
+    """
+    try:
+        logging.info("Calling GET /api-keys endpoint")
+        keys = await ApiKeyController().list_keys(current_user=current_user)
+        return ApiKeyListResponse(keys=[ApiKeyItemResponse(**k) for k in keys])
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /api-keys endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /api-keys endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@api_key_router.delete(
+    "/{id}",
+    status_code=status.HTTP_200_OK,
+    response_model=ApiKeyItemResponse,
+)
+async def revoke_api_key(
+    id: str,
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Revoke an API key.
+
+    Args:
+        id (str): API key ID.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        ApiKeyItemResponse: Revoked key record.
+    """
+    try:
+        logging.info(f"Calling DELETE /api-keys/{id} endpoint")
+        revoked = await ApiKeyController().revoke_key(key_id=id, current_user=current_user)
+        return ApiKeyItemResponse(**revoked)
+    except HTTPException as httperror:
+        logging.error(f"Error in DELETE /api-keys/{id} endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in DELETE /api-keys/{id} endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== APPROVAL ROUTER ======
+"""
+approval_router.py — Manager inspection approval queue and approval action routes.
+
+Exposes GET /approvals (list pending tickets) and POST /tickets/{id}/approve
+endpoints for manager review and approval of inspected shipments.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from commons.auth import require_roles
+from core import logger
+from core.apis.schemas.responses.wms_response import (
+    ApprovalQueueResponse,
+    TicketResponse,
+)
+from core.controllers.wms_controller import TicketController
+
+approval_router = APIRouter(tags=["Approval Queue"])
+logging = logger(__name__)
+
+
+@approval_router.get(
+    "/approvals",
+    status_code=status.HTTP_200_OK,
+    response_model=ApprovalQueueResponse,
+)
+async def list_approvals(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Retrieve manager queue of tickets pending inspection approval (Manager/Owner only).
+
+    Args:
+        skip (int): Pagination offset.
+        limit (int): Maximum items.
+        current_user (dict): Authenticated user (MANAGER or OWNER).
+
+    Returns:
+        ApprovalQueueResponse: List of pending tickets.
+    """
+    try:
+        logging.info("Calling GET /approvals endpoint")
+        response = await TicketController().list_approvals(
+            current_user=current_user,
+            skip=skip,
+            limit=limit,
+        )
+        return ApprovalQueueResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /approvals endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /approvals endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@approval_router.post(
+    "/tickets/{id}/approve",
+    status_code=status.HTTP_200_OK,
+    response_model=TicketResponse,
+)
+async def approve_ticket(
+    id: str,
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Approve ticket inspection (Manager/Owner only).
+
+    Transitions ticket and non-damaged items to SHIPMENT_ARRIVED (sellable stock).
+
+    Args:
+        id (str): Ticket ID string.
+        current_user (dict): Authenticated user (MANAGER or OWNER).
+
+    Returns:
+        TicketResponse: Approved ticket object.
+
+    Raises:
+        HTTPException 404: Ticket not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling POST /tickets/{id}/approve endpoint")
+        response = await TicketController().approve_ticket(
+            ticket_id=id,
+            current_user=current_user,
+        )
+        return TicketResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /tickets/{id}/approve endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /tickets/{id}/approve endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== ARRIVAL ROUTER ======
+"""
+arrival_router.py — Physical arrival logging endpoint routes.
+
+Exposes POST /arrivals for logging parcel arrivals and generating atomic ticket IDs.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from commons.auth import get_current_user
+from core import logger
+from core.apis.schemas.requests.wms_request import ArrivalCreateRequest
+from core.apis.schemas.responses.wms_response import TicketResponse
+from core.controllers.wms_controller import ArrivalController
+
+arrival_router = APIRouter(prefix="/arrivals", tags=["Arrivals & Ticketing"])
+logging = logger(__name__)
+
+
+@arrival_router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=TicketResponse,
+)
+async def process_arrival(
+    request: ArrivalCreateRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Log physical parcel arrival at a warehouse facility.
+
+    Matches carrier tracking number to an accepted inbox announcement or flags no_ticket_arrival=true,
+    generating an atomic ticket ID ({WH}-{YYYYMMDD}-{SEQ:03d}).
+
+    Args:
+        request (ArrivalCreateRequest): Arrival payload (warehouse_id, tracking_number, no_ticket_arrival).
+        current_user (dict): Authenticated user (staff member).
+
+    Returns:
+        TicketResponse: Created Ticket object.
+
+    Raises:
+        HTTPException 404: Warehouse not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info("Calling POST /arrivals endpoint")
+        response = await ArrivalController().process_arrival(
+            arrival_data=request.model_dump(),
+            current_user=current_user,
+        )
+        return TicketResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /arrivals endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /arrivals endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== AUDIT ROUTER ======
+"""
+audit_router.py — Audit log query endpoint routes.
+
+Exposes GET /audit for viewing immutable system mutation audit records.
+"""
+
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from commons.auth import require_roles
+from core import logger
+from core.apis.schemas.responses.wms_response import AuditLogListResponse
+from core.controllers.wms_controller import AuditController
+
+audit_router = APIRouter(prefix="/audit", tags=["Audit Log"])
+logging = logger(__name__)
+
+
+@audit_router.get(
+    "",
+    status_code=status.HTTP_200_OK,
+    response_model=AuditLogListResponse,
+)
+async def get_audit_logs(
+    actor_id: str | None = Query(None, description="Filter by actor user ID"),
+    collection: str | None = Query(None, description="Filter by target collection name"),
+    action: str | None = Query(None, description="Filter by action name (CREATE, UPDATE, DELETE)"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Retrieve system audit log records (Owner and Manager roles only).
+
+    Args:
+        actor_id (Optional[str]): Actor ID filter.
+        collection (Optional[str]): Target collection filter.
+        action (Optional[str]): Action name filter.
+        skip (int): Offset count.
+        limit (int): Maximum records.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        AuditLogListResponse: List of audit log records and total count.
+
+    Raises:
+        HTTPException 403: Prohibited for Staff role.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info("Calling GET /audit endpoint")
+        response = await AuditController().get_audit_logs(
+            current_user=current_user,
+            actor_id=actor_id,
+            collection=collection,
+            action=action,
+            skip=skip,
+            limit=limit,
+        )
+        return AuditLogListResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /audit endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /audit endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== FACILITY ROUTER ======
+"""
+facility_router.py — Warehouse facility management endpoint routes.
+
+Exposes endpoints for creating, listing, viewing, and updating warehouse facilities.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from commons.auth import require_roles
+from core import logger
+from core.apis.schemas.requests.wms_request import (
+    WarehouseCreateRequest,
+    WarehouseUpdateRequest,
+)
+from core.apis.schemas.responses.wms_response import (
+    WarehouseListResponse,
+    WarehouseResponse,
+)
+from core.controllers.wms_controller import WarehouseController
+
+facility_router = APIRouter(prefix="/warehouses", tags=["Warehouses"])
+logging = logger(__name__)
+
+
+@facility_router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=WarehouseResponse,
+)
+async def create_warehouse(
+    request: WarehouseCreateRequest,
+    current_user: dict = Depends(require_roles(["OWNER"])),
+):
+    """
+    Create a new warehouse facility (Owner only).
+
+    Args:
+        request (WarehouseCreateRequest): Warehouse creation parameters.
+        current_user (dict): Authenticated user (OWNER role required).
+
+    Returns:
+        WarehouseResponse: Created warehouse details.
+
+    Raises:
+        HTTPException 400: Duplicate warehouse code.
+        HTTPException 403: Forbidden if not Owner.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info("Calling POST /warehouses endpoint")
+        response = await WarehouseController().create_warehouse(
+            wh_data=request.model_dump(),
+            current_user=current_user,
+        )
+        return WarehouseResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /warehouses endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /warehouses endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@facility_router.get(
+    "",
+    status_code=status.HTTP_200_OK,
+    response_model=WarehouseListResponse,
+)
+async def list_warehouses(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    List all warehouse facilities.
+
+    Args:
+        skip (int): Pagination offset count.
+        limit (int): Maximum records to return.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        WarehouseListResponse: List of warehouse facilities.
+
+    Raises:
+        HTTPException 403: Forbidden for Staff.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info("Calling GET /warehouses endpoint")
+        response = await WarehouseController().list_warehouses(skip=skip, limit=limit)
+        return WarehouseListResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /warehouses endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /warehouses endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@facility_router.get(
+    "/{id}",
+    status_code=status.HTTP_200_OK,
+    response_model=WarehouseResponse,
+)
+async def get_warehouse(
+    id: str,
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Retrieve warehouse facility details by ID.
+
+    Args:
+        id (str): Warehouse ID string.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        WarehouseResponse: Warehouse details.
+
+    Raises:
+        HTTPException 404: Warehouse not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling GET /warehouses/{id} endpoint")
+        response = await WarehouseController().get_warehouse_by_id(wh_id=id)
+        return WarehouseResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /warehouses/{id} endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /warehouses/{id} endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@facility_router.put(
+    "/{id}",
+    status_code=status.HTTP_200_OK,
+    response_model=WarehouseResponse,
+)
+async def update_warehouse(
+    id: str,
+    request: WarehouseUpdateRequest,
+    current_user: dict = Depends(require_roles(["OWNER"])),
+):
+    """
+    Update warehouse facility details (Owner only).
+
+    Args:
+        id (str): Warehouse ID string.
+        request (WarehouseUpdateRequest): Update payload.
+        current_user (dict): Authenticated user (OWNER role required).
+
+    Returns:
+        WarehouseResponse: Updated warehouse details.
+
+    Raises:
+        HTTPException 404: Warehouse not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling PUT /warehouses/{id} endpoint")
+        response = await WarehouseController().update_warehouse(
+            wh_id=id,
+            update_data=request.model_dump(),
+            current_user=current_user,
+        )
+        return WarehouseResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in PUT /warehouses/{id} endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in PUT /warehouses/{id} endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== HEALTH ROUTER ======
+"""
+health_router.py — Health check endpoint routes.
+
+Exposes GET /health and GET /v1/health endpoints for load balancers and system monitoring.
+"""
+
+from fastapi import APIRouter, HTTPException, status
+
+from core import logger
+from core.apis.schemas.responses.wms_response import HealthResponse
+from core.controllers.wms_controller import HealthController
+
+health_router = APIRouter()
+logging = logger(__name__)
+
+
+@health_router.get(
+    "/health",
+    status_code=status.HTTP_200_OK,
+    response_model=HealthResponse,
+    tags=["Health"],
+)
+@health_router.get(
+    "/v1/health",
+    status_code=status.HTTP_200_OK,
+    response_model=HealthResponse,
+    tags=["Health"],
+)
+async def get_health():
+    """
+    Retrieve application health status.
+
+    Verifies API server status and underlying MongoDB database connectivity.
+
+    Returns:
+        HealthResponse: Health status information.
+
+    Raises:
+        HTTPException 503: Service unavailable if database is disconnected.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info("Calling GET /health endpoint")
+        response = await HealthController().get_health()
+        return HealthResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /health endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /health endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== INBOX ROUTER ======
+"""
+inbox_router.py — Seller pre-announcement inbox endpoint routes.
+
+Exposes endpoints for seller parcel announcements, manager acceptance, rejection, and comment threading.
+"""
+
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from commons.auth import get_current_user, require_roles
+from core import logger
+from core.apis.schemas.requests.wms_request import (
+    InboxAnnounceRequest,
+    InboxRevertRequest,
+)
+from core.apis.schemas.responses.wms_response import InboxListResponse, InboxResponse
+from core.controllers.wms_controller import InboxController
+
+inbox_router = APIRouter(prefix="/inbox", tags=["Inbox & Announcements"])
+logging = logger(__name__)
+
+
+@inbox_router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=InboxResponse,
+)
+async def announce_shipment(
+    request: InboxAnnounceRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Announce an incoming parcel shipment (status ANNOUNCED).
+
+    Args:
+        request (InboxAnnounceRequest): Parcel announcement payload.
+        current_user (dict): Authenticated user dictionary.
+
+    Returns:
+        InboxResponse: Created inbox shipment object.
+
+    Raises:
+        HTTPException 404: Warehouse not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info("Calling POST /inbox endpoint")
+        response = await InboxController().announce_shipment(
+            shipment_data=request.model_dump(),
+            current_user=current_user,
+        )
+        return InboxResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /inbox endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /inbox endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@inbox_router.get(
+    "",
+    status_code=status.HTTP_200_OK,
+    response_model=InboxListResponse,
+)
+async def list_shipments(
+    status_filter: str | None = Query(None, alias="status", description="Filter by status (ANNOUNCED, ACCEPTED, DECLINED, NEEDS_SPEC)"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    List inbox shipment announcements filterable by status.
+
+    Args:
+        status_filter (Optional[str]): Status filter string.
+        skip (int): Pagination offset.
+        limit (int): Maximum records.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        InboxListResponse: List of inbox shipments.
+    """
+    try:
+        logging.info("Calling GET /inbox endpoint")
+        response = await InboxController().list_shipments(
+            current_user=current_user,
+            status_filter=status_filter,
+            skip=skip,
+            limit=limit,
+        )
+        return InboxListResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /inbox endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /inbox endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@inbox_router.post(
+    "/{id}/accept",
+    status_code=status.HTTP_200_OK,
+    response_model=InboxResponse,
+)
+async def accept_shipment(
+    id: str,
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Accept an inbox shipment announcement (Manager/Owner only).
+
+    Args:
+        id (str): Inbox shipment ID string.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        InboxResponse: Updated inbox shipment object.
+
+    Raises:
+        HTTPException 404: Shipment not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling POST /inbox/{id}/accept endpoint")
+        response = await InboxController().accept_shipment(inbox_id=id, current_user=current_user)
+        return InboxResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /inbox/{id}/accept endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /inbox/{id}/accept endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@inbox_router.post(
+    "/{id}/decline",
+    status_code=status.HTTP_200_OK,
+    response_model=InboxResponse,
+)
+async def decline_shipment(
+    id: str,
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Decline an inbox shipment announcement (Manager/Owner only).
+
+    Args:
+        id (str): Inbox shipment ID string.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        InboxResponse: Updated inbox shipment object.
+
+    Raises:
+        HTTPException 404: Shipment not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling POST /inbox/{id}/decline endpoint")
+        response = await InboxController().decline_shipment(inbox_id=id, current_user=current_user)
+        return InboxResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /inbox/{id}/decline endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /inbox/{id}/decline endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@inbox_router.post(
+    "/{id}/revert",
+    status_code=status.HTTP_200_OK,
+    response_model=InboxResponse,
+)
+async def revert_shipment(
+    id: str,
+    request: InboxRevertRequest,
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Revert an inbox shipment to NEEDS_SPEC state with comment (Manager/Owner only).
+
+    Args:
+        id (str): Inbox shipment ID string.
+        request (InboxRevertRequest): Revert comment payload.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        InboxResponse: Updated inbox shipment object with comment thread.
+
+    Raises:
+        HTTPException 404: Shipment not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling POST /inbox/{id}/revert endpoint")
+        response = await InboxController().revert_shipment(
+            inbox_id=id,
+            comment_text=request.comment,
+            current_user=current_user,
+        )
+        return InboxResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /inbox/{id}/revert endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /inbox/{id}/revert endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== ORDER ROUTER ======
+"""
+order_router.py — Outbound order fulfillment endpoint routes.
+
+Exposes endpoints for manual order intake, atomic stock reservation, picklist generation,
+packing, carrier shipping label generation, shipping, and reservation cancellation.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from commons.auth import get_current_user
+from core import logger
+from core.apis.schemas.requests.wms_request import (
+    OrderCreateRequest,
+    OrderPackRequest,
+)
+from core.apis.schemas.responses.wms_response import (
+    OrderResponse,
+    PicklistResponse,
+    ShippingLabelResponse,
+)
+from core.controllers.wms_controller import OrderController
+
+order_router = APIRouter(prefix="/orders", tags=["Orders & Fulfillment"])
+logging = logger(__name__)
+
+
+@order_router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=OrderResponse,
+)
+async def create_order(
+    request: OrderCreateRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Intake a new customer order (status PENDING).
+
+    Args:
+        request (OrderCreateRequest): Order intake parameters.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        OrderResponse: Created order object.
+
+    Raises:
+        HTTPException 400: Duplicate order ID.
+        HTTPException 404: Warehouse not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info("Calling POST /orders endpoint")
+        response = await OrderController().create_order(
+            order_data=request.model_dump(),
+            current_user=current_user,
+        )
+        return OrderResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /orders endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /orders endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@order_router.post(
+    "/{id}/reserve",
+    status_code=status.HTTP_200_OK,
+    response_model=OrderResponse,
+)
+async def reserve_order(
+    id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Atomically reserve stock for an order inside a MongoDB transaction (STORED -> RESERVED).
+
+    Concurrent reservation attempts for identical units yield HTTP 409 Conflict.
+
+    Args:
+        id (str): Target order ID reference string.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        OrderResponse: Updated reserved order object.
+
+    Raises:
+        HTTPException 400: Insufficient available stock.
+        HTTPException 404: Order not found.
+        HTTPException 409: Concurrent reservation conflict.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling POST /orders/{id}/reserve endpoint")
+        response = await OrderController().reserve_order(
+            order_id=id,
+            current_user=current_user,
+        )
+        return OrderResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /orders/{id}/reserve endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /orders/{id}/reserve endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@order_router.get(
+    "/{id}/picklist",
+    status_code=status.HTTP_200_OK,
+    response_model=PicklistResponse,
+)
+async def get_picklist(
+    id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Generate picklist showing physical bin storage locations for reserved order units.
+
+    Args:
+        id (str): Order ID string.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        PicklistResponse: Picklist object containing item storage location codes.
+
+    Raises:
+        HTTPException 404: Order not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling GET /orders/{id}/picklist endpoint")
+        response = await OrderController().get_picklist(
+            order_id=id,
+            current_user=current_user,
+        )
+        return PicklistResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /orders/{id}/picklist endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /orders/{id}/picklist endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@order_router.post(
+    "/{id}/pack",
+    status_code=status.HTTP_200_OK,
+    response_model=OrderResponse,
+)
+async def pack_order(
+    id: str,
+    request: OrderPackRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Confirm packed order weight and package dimensions (transitions status to PACKED).
+
+    Args:
+        id (str): Order ID string.
+        request (OrderPackRequest): Packing parameters.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        OrderResponse: Updated packed order object.
+
+    Raises:
+        HTTPException 404: Order not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling POST /orders/{id}/pack endpoint")
+        response = await OrderController().pack_order(
+            order_id=id,
+            pack_data=request.model_dump(),
+            current_user=current_user,
+        )
+        return OrderResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /orders/{id}/pack endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /orders/{id}/pack endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@order_router.post(
+    "/{id}/label",
+    status_code=status.HTTP_200_OK,
+    response_model=ShippingLabelResponse,
+)
+async def generate_label(
+    id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Generate stub carrier shipping label and tracking number.
+
+    Args:
+        id (str): Order ID string.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        ShippingLabelResponse: Shipping label URL and tracking number.
+
+    Raises:
+        HTTPException 404: Order not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling POST /orders/{id}/label endpoint")
+        response = await OrderController().generate_label(
+            order_id=id,
+            current_user=current_user,
+        )
+        return ShippingLabelResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /orders/{id}/label endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /orders/{id}/label endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@order_router.post(
+    "/{id}/ship",
+    status_code=status.HTTP_200_OK,
+    response_model=OrderResponse,
+)
+async def ship_order(
+    id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Ship customer order and transition reserved item units to SOLD state.
+
+    Args:
+        id (str): Order ID string.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        OrderResponse: Updated shipped order object.
+
+    Raises:
+        HTTPException 404: Order not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling POST /orders/{id}/ship endpoint")
+        response = await OrderController().ship_order(
+            order_id=id,
+            current_user=current_user,
+        )
+        return OrderResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /orders/{id}/ship endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /orders/{id}/ship endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@order_router.post(
+    "/{id}/cancel",
+    status_code=status.HTTP_200_OK,
+    response_model=OrderResponse,
+)
+async def cancel_order(
+    id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Cancel order reservation and release items back to STORED status.
+
+    Args:
+        id (str): Order ID string.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        OrderResponse: Updated cancelled order object.
+
+    Raises:
+        HTTPException 404: Order not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling POST /orders/{id}/cancel endpoint")
+        response = await OrderController().cancel_order(
+            order_id=id,
+            current_user=current_user,
+        )
+        return OrderResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /orders/{id}/cancel endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /orders/{id}/cancel endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== QUERY ROUTER ======
+"""
+query_router.py — Natural Language stock search query route.
+
+Exposes endpoint POST /query.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from commons.auth import get_current_user
+from core import logger
+from core.apis.schemas.requests.wms_request import NLQueryRequest
+from core.apis.schemas.responses.wms_response import NLQueryResponse
+from core.controllers.wms_controller import NLQueryController
+
+query_router = APIRouter(tags=["Natural Language Query"])
+logging = logger(__name__)
+
+
+@query_router.post(
+    "/query",
+    status_code=status.HTTP_200_OK,
+    response_model=NLQueryResponse,
+)
+async def process_nl_query(
+    request: NLQueryRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Execute natural language stock search using safe allow-listed query templates.
+
+    Args:
+        request (NLQueryRequest): Query prompt request payload.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        NLQueryResponse: Result payload dictionary.
+    """
+    try:
+        logging.info("Calling POST /query endpoint")
+        response = await NLQueryController().execute_query(
+            query_text=request.query,
+            current_user=current_user,
+        )
+        return NLQueryResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /query endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /query endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== REPORT ROUTER ======
+"""
+report_router.py — Reporting, dashboard analytics, and file export routes.
+
+Exposes endpoints for GET /reports/summary, GET /reports/arrived-today, GET /reports/sold-today,
+GET /reports/stock, and GET /reports/export (CSV & XLSX).
+"""
+
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+
+from commons.auth import require_roles
+from core import logger
+from core.apis.schemas.responses.wms_response import (
+    ReportFeedResponse,
+    ReportSummaryResponse,
+    StockTotalsResponse,
+)
+from core.controllers.wms_controller import ReportController
+
+report_router = APIRouter(prefix="/reports", tags=["Reporting & Export"])
+logging = logger(__name__)
+
+
+@report_router.get(
+    "/summary",
+    status_code=status.HTTP_200_OK,
+    response_model=ReportSummaryResponse,
+)
+async def get_summary(
+    date: str | None = Query(None, description="Target date in YYYY-MM-DD format"),
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Retrieve executive dashboard summary metrics (todays_tickets, todays_sold, arrived_missed).
+
+    Args:
+        date (Optional[str]): Target date query parameter.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        ReportSummaryResponse: Executive dashboard summary metrics payload.
+    """
+    try:
+        logging.info("Calling GET /reports/summary endpoint")
+        response = await ReportController().get_summary(target_date=date, current_user=current_user)
+        return ReportSummaryResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /reports/summary endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /reports/summary endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@report_router.get(
+    "/arrived-today",
+    status_code=status.HTTP_200_OK,
+    response_model=ReportFeedResponse,
+)
+async def get_arrived_today(
+    date: str | None = Query(None, description="Target date in YYYY-MM-DD format"),
+    warehouse_id: str | None = Query(None, description="Optional warehouse ID filter"),
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Retrieve detail feed of parcels/tickets arrived on target date.
+
+    Args:
+        date (Optional[str]): Target date query.
+        warehouse_id (Optional[str]): Warehouse filter.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        ReportFeedResponse: Detail feed of arrived tickets.
+    """
+    try:
+        logging.info("Calling GET /reports/arrived-today endpoint")
+        response = await ReportController().get_arrived_today(
+            target_date=date,
+            current_user=current_user,
+            warehouse_id=warehouse_id,
+        )
+        return ReportFeedResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /reports/arrived-today endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /reports/arrived-today endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@report_router.get(
+    "/sold-today",
+    status_code=status.HTTP_200_OK,
+    response_model=ReportFeedResponse,
+)
+async def get_sold_today(
+    date: str | None = Query(None, description="Target date in YYYY-MM-DD format"),
+    warehouse_id: str | None = Query(None, description="Optional warehouse ID filter"),
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Retrieve detail feed of item units sold on target date.
+
+    Args:
+        date (Optional[str]): Target date query.
+        warehouse_id (Optional[str]): Warehouse filter.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        ReportFeedResponse: Detail feed of sold items.
+    """
+    try:
+        logging.info("Calling GET /reports/sold-today endpoint")
+        response = await ReportController().get_sold_today(
+            target_date=date,
+            current_user=current_user,
+            warehouse_id=warehouse_id,
+        )
+        return ReportFeedResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /reports/sold-today endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /reports/sold-today endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@report_router.get(
+    "/stock",
+    status_code=status.HTTP_200_OK,
+    response_model=StockTotalsResponse,
+)
+async def get_stock_totals(
+    warehouse_id: str | None = Query(None, description="Optional warehouse ID filter"),
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Retrieve manager stock totals aggregation (on-hand, available, reserved, damaged per product).
+
+    Args:
+        warehouse_id (Optional[str]): Warehouse ID filter.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        StockTotalsResponse: Aggregated stock totals.
+    """
+    try:
+        logging.info("Calling GET /reports/stock endpoint")
+        response = await ReportController().get_stock_totals(
+            current_user=current_user,
+            warehouse_id=warehouse_id,
+        )
+        return StockTotalsResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /reports/stock endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /reports/stock endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@report_router.get(
+    "/export",
+    status_code=status.HTTP_200_OK,
+)
+async def export_report(
+    report_type: str = Query(..., description="Report type (arrived, sold, stock)"),
+    format: str = Query("csv", description="File format (csv or xlsx)"),
+    date: str | None = Query(None, description="Target date (YYYY-MM-DD)"),
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Export report feed as downloadable file stream (.csv or .xlsx).
+
+    Args:
+        report_type (str): Report type string.
+        format (str): File format extension string.
+        date (Optional[str]): Target date query parameter.
+        current_user (dict): Authenticated user (OWNER or MANAGER).
+
+    Returns:
+        Response: Binary file response with attachment disposition.
+    """
+    try:
+        logging.info(f"Calling GET /reports/export endpoint | Type: {report_type} | Format: {format}")
+        content, media_type, filename = await ReportController().export_report(
+            report_type=report_type,
+            format_type=format,
+            target_date=date,
+            current_user=current_user,
+        )
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return Response(content=content, media_type=media_type, headers=headers)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /reports/export endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /reports/export endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== STORAGE ROUTER ======
+"""
+storage_router.py — Physical storage location bin endpoint routes.
+
+Exposes endpoints for creating and listing physical warehouse storage locations.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from commons.auth import get_current_user, require_roles
+from core import logger
+from core.apis.schemas.requests.wms_request import StorageLocationCreateRequest
+from core.apis.schemas.responses.wms_response import (
+    StorageLocationListResponse,
+    StorageLocationResponse,
+)
+from core.controllers.wms_controller import StorageController
+
+storage_router = APIRouter(prefix="/storage-locations", tags=["Storage Locations"])
+logging = logger(__name__)
+
+
+@storage_router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=StorageLocationResponse,
+)
+async def create_storage_location(
+    request: StorageLocationCreateRequest,
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER"])),
+):
+    """
+    Create a new physical storage location bin (Manager/Owner only).
+
+    Constructs combined location_code as {ZONE}-{RACK}-{BIN} (e.g. A-04-12).
+
+    Args:
+        request (StorageLocationCreateRequest): Storage location parameters.
+        current_user (dict): Authenticated user (MANAGER or OWNER).
+
+    Returns:
+        StorageLocationResponse: Created storage location object.
+
+    Raises:
+        HTTPException 400: Duplicate location code.
+        HTTPException 404: Warehouse not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info("Calling POST /storage-locations endpoint")
+        response = await StorageController().create_location(
+            storage_data=request.model_dump(),
+            current_user=current_user,
+        )
+        return StorageLocationResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /storage-locations endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /storage-locations endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@storage_router.get(
+    "",
+    status_code=status.HTTP_200_OK,
+    response_model=StorageLocationListResponse,
+)
+async def list_storage_locations(
+    warehouse_id: str = Query(..., description="Target warehouse facility ID"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    List physical storage locations for a warehouse facility.
+
+    Args:
+        warehouse_id (str): Warehouse ID query parameter.
+        skip (int): Pagination offset.
+        limit (int): Maximum records.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        StorageLocationListResponse: List of storage locations.
+    """
+    try:
+        logging.info(f"Calling GET /storage-locations endpoint for WH: {warehouse_id}")
+        response = await StorageController().list_locations(
+            warehouse_id=warehouse_id,
+            skip=skip,
+            limit=limit,
+        )
+        return StorageLocationListResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /storage-locations endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /storage-locations endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== TICKET ROUTER ======
+"""
+ticket_router.py — Ticket barcode scanning, inspection approval, and storage assignment routes.
+
+Exposes endpoints for scanning item barcodes, submitting for inspection, manager approval queue,
+and assigning storage locations.
+"""
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Header,
+    HTTPException,
+    UploadFile,
+    status,
+)
+
+from commons.auth import get_current_user
+from core import logger
+from core.apis.schemas.requests.wms_request import ItemLogRequest
+from core.apis.schemas.requests.wms_request import StoreTicketRequest
+from core.apis.schemas.responses.wms_response import ItemResponse
+from core.apis.schemas.responses.wms_response import (
+    TicketResponse,
+)
+from core.controllers.wms_controller import TicketController
+from core.services.integration_service import get_storage_service
+
+ticket_router = APIRouter(tags=["Ticketing, Inspection & Storage"])
+logging = logger(__name__)
+
+
+@ticket_router.post(
+    "/tickets/{ticket_id}/items",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ItemResponse,
+)
+async def log_item_scan(
+    ticket_id: str,
+    request: ItemLogRequest,
+    idempotency_key: str = Header(..., alias="Idempotency-Key", description="Unique idempotency lock string"),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Log a scanned item unit under a ticket (requires Idempotency-Key header).
+
+    Enforces Idempotency-Key header to prevent duplicate item creation on retries.
+
+    Args:
+        ticket_id (str): Ticket ID string (e.g. RNO-20260813-001).
+        request (ItemLogRequest): Item barcode scanning details.
+        idempotency_key (str): Idempotency key from header.
+        current_user (dict): Authenticated staff user dependency.
+
+    Returns:
+        ItemResponse: Created item unit object.
+
+    Raises:
+        HTTPException 400: Missing idempotency key.
+        HTTPException 404: Ticket not found.
+        HTTPException 409: Duplicate idempotency request.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling POST /tickets/{ticket_id}/items endpoint")
+        response = await TicketController().log_item_scan(
+            ticket_id=ticket_id,
+            item_data=request.model_dump(),
+            idempotency_key=idempotency_key,
+            current_user=current_user,
+        )
+        return ItemResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /tickets/{ticket_id}/items endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /tickets/{ticket_id}/items endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@ticket_router.put(
+    "/tickets/{id}/submit-inspection",
+    status_code=status.HTTP_200_OK,
+    response_model=TicketResponse,
+)
+async def submit_inspection(
+    id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Submit completed ticket item logging for Manager inspection review.
+
+    Transitions ticket status to PENDING_INSPECTION.
+
+    Args:
+        id (str): Ticket ID string.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        TicketResponse: Updated ticket object.
+
+    Raises:
+        HTTPException 404: Ticket not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling PUT /tickets/{id}/submit-inspection endpoint")
+        response = await TicketController().submit_inspection(
+            ticket_id=id,
+            current_user=current_user,
+        )
+        return TicketResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in PUT /tickets/{id}/submit-inspection endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in PUT /tickets/{id}/submit-inspection endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+
+@ticket_router.post(
+    "/tickets/{id}/store",
+    status_code=status.HTTP_200_OK,
+    response_model=TicketResponse,
+)
+async def store_ticket(
+    id: str,
+    request: StoreTicketRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Assign storage location code to ticket and attached items (transitions to STORED).
+
+    Args:
+        id (str): Ticket ID string.
+        request (StoreTicketRequest): Storage location payload.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        TicketResponse: Updated ticket object with assigned storage location.
+
+    Raises:
+        HTTPException 404: Ticket not found.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info(f"Calling POST /tickets/{id}/store endpoint")
+        response = await TicketController().store_ticket(
+            ticket_id=id,
+            location_code=request.storage_location,
+            current_user=current_user,
+        )
+        return TicketResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /tickets/{id}/store endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /tickets/{id}/store endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@ticket_router.post(
+    "/uploads",
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_image(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Upload item photo image file.
+
+    Args:
+        file (UploadFile): Image file stream (.jpg, .png, .webp).
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        dict: Image relative access URL.
+
+    Raises:
+        HTTPException 400: Invalid file extension format.
+        HTTPException 500: Internal server error.
+    """
+    try:
+        logging.info("Calling POST /uploads endpoint")
+        image_url = await get_storage_service().save_image(file=file)
+        return {"image_url": image_url}
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /uploads endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /uploads endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== VISION ROUTER ======
+"""
+vision_router.py — OpenCV vision measurement endpoint route.
+
+Exposes endpoint POST /vision/measure.
+"""
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+
+from commons.auth import get_current_user
+from core import logger
+from core.apis.schemas.responses.wms_response import VisionMeasureResponse
+from core.controllers.wms_controller import VisionController
+
+vision_router = APIRouter(prefix="/vision", tags=["Vision Measurement"])
+logging = logger(__name__)
+
+
+@vision_router.post(
+    "/measure",
+    status_code=status.HTTP_200_OK,
+    response_model=VisionMeasureResponse,
+)
+async def measure_package(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Estimate package width and height from uploaded photo using ArUco reference marker.
+
+    Args:
+        file (UploadFile): Package photo upload binary.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        VisionMeasureResponse: Estimated package dimensions (weight ALWAYS manual).
+    """
+    try:
+        logging.info("Calling POST /vision/measure endpoint")
+        image_bytes = await file.read()
+        response = await VisionController().measure_package(
+            image_bytes=image_bytes,
+            current_user=current_user,
+        )
+        return VisionMeasureResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /vision/measure endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /vision/measure endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+# ====== VOICE ROUTER ======
+"""
+voice_router.py — AI Voice processing endpoint routes.
+
+Exposes endpoints for POST /voice/transcribe, POST /voice/parse, and POST /voice/drafts/{id}/confirm.
+"""
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+
+from commons.auth import get_current_user
+from core import logger
+from core.apis.schemas.requests.wms_request import (
+    VoiceConfirmRequest,
+    VoiceParseRequest,
+)
+from core.apis.schemas.responses.wms_response import ItemResponse
+from core.apis.schemas.responses.wms_response import (
+    TranscribeResponse,
+    VoiceDraftResponse,
+)
+from core.controllers.wms_controller import VoiceController
+
+voice_router = APIRouter(prefix="/voice", tags=["Voice Pipeline"])
+logging = logger(__name__)
+
+
+@voice_router.post(
+    "/transcribe",
+    status_code=status.HTTP_200_OK,
+    response_model=TranscribeResponse,
+)
+async def transcribe_audio(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Transcribe uploaded voice audio to text string.
+
+    Args:
+        file (UploadFile): Audio file binary upload.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        TranscribeResponse: Audio transcript payload.
+    """
+    try:
+        logging.info("Calling POST /voice/transcribe endpoint")
+        audio_bytes = await file.read()
+        response = await VoiceController().transcribe(
+            audio_bytes=audio_bytes,
+            filename=file.filename,
+            current_user=current_user,
+        )
+        return TranscribeResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /voice/transcribe endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /voice/transcribe endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@voice_router.post(
+    "/parse",
+    status_code=status.HTTP_201_CREATED,
+    response_model=VoiceDraftResponse,
+)
+async def parse_transcript(
+    request: VoiceParseRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Parse text transcript into structured unconfirmed draft item using LLM.
+
+    Args:
+        request (VoiceParseRequest): Parse parameters.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        VoiceDraftResponse: Created voice draft object.
+    """
+    try:
+        logging.info("Calling POST /voice/parse endpoint")
+        response = await VoiceController().parse_transcript(
+            ticket_id=request.ticket_id,
+            transcript=request.transcript,
+            current_user=current_user,
+        )
+        return VoiceDraftResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /voice/parse endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /voice/parse endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+
+@voice_router.post(
+    "/drafts/{id}/confirm",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ItemResponse,
+)
+async def confirm_draft(
+    id: str,
+    request: VoiceConfirmRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Confirm voice draft and write through identical Phase 2 item logging service pipeline.
+
+    Args:
+        id (str): Voice draft ID string.
+        request (VoiceConfirmRequest): Confirmed barcode and manual weight override.
+        current_user (dict): Authenticated user dependency.
+
+    Returns:
+        ItemResponse: Created item unit record payload.
+    """
+    try:
+        logging.info(f"Calling POST /voice/drafts/{id}/confirm endpoint")
+        response = await VoiceController().confirm_draft(
+            draft_id=id,
+            barcode=request.barcode,
+            override_weight=request.override_weight,
+            current_user=current_user,
+        )
+        return ItemResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in POST /voice/drafts/{id}/confirm endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in POST /voice/drafts/{id}/confirm endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+__all__ = [
+    "api_key_router",
+    "approval_router",
+    "arrival_router",
+    "audit_router",
+    "facility_router",
+    "health_router",
+    "inbox_router",
+    "order_router",
+    "query_router",
+    "report_router",
+    "storage_router",
+    "ticket_router",
+    "vision_router",
+    "voice_router",
+    "auth_router",
+    "user_router",
+]
