@@ -1,5 +1,5 @@
 """
-warehouse_router.py — Warehouse facility management endpoint routes.
+facility_router.py — Warehouse facility management endpoint routes.
 
 Exposes endpoints for creating, listing, viewing, and updating warehouse facilities.
 """
@@ -8,21 +8,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from commons.auth import require_roles
 from core import logger
-from core.apis.schemas.requests.warehouse_request import (
+from core.apis.schemas.requests.facility_request import (
     WarehouseCreateRequest,
     WarehouseUpdateRequest,
 )
-from core.apis.schemas.responses.warehouse_response import (
+from core.apis.schemas.responses.facility_response import (
     WarehouseListResponse,
     WarehouseResponse,
 )
-from core.controllers.warehouse_controller import WarehouseController
+from core.controllers.facility_controller import WarehouseController
 
-warehouse_router = APIRouter(prefix="/warehouses", tags=["Warehouses"])
+facility_router = APIRouter(prefix="/warehouses", tags=["Warehouses"])
 logging = logger(__name__)
 
 
-@warehouse_router.post(
+@facility_router.post(
     "",
     status_code=status.HTTP_201_CREATED,
     response_model=WarehouseResponse,
@@ -64,7 +64,7 @@ async def create_warehouse(
         )
 
 
-@warehouse_router.get(
+@facility_router.get(
     "",
     status_code=status.HTTP_200_OK,
     response_model=WarehouseListResponse,
@@ -104,7 +104,7 @@ async def list_warehouses(
         )
 
 
-@warehouse_router.get(
+@facility_router.get(
     "/{id}",
     status_code=status.HTTP_200_OK,
     response_model=WarehouseResponse,
@@ -142,7 +142,7 @@ async def get_warehouse(
         )
 
 
-@warehouse_router.put(
+@facility_router.put(
     "/{id}",
     status_code=status.HTTP_200_OK,
     response_model=WarehouseResponse,

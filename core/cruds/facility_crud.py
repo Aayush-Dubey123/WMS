@@ -1,5 +1,5 @@
 """
-warehouse_crud.py — Persistence layer for warehouse document operations in MongoDB.
+facility_crud.py — Persistence layer for warehouse facility document operations in MongoDB.
 
 Provides methods for warehouse creation, retrieval by code/ID, update, and listing.
 """

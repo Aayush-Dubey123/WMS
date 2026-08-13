@@ -129,3 +129,23 @@ async def init_db() -> None:
     except Exception as error:
         logging.error(f"Error in init_db function: {error}")
         raise
+
+
+if __name__ == "__main__":
+    """
+    Thin CLI entrypoint: python -m core.database.init_db
+
+    Connects to MongoDB, runs all index initialization idempotently,
+    then cleanly closes the connection.
+    """
+    import asyncio
+
+    from core.database.database import close_mongo_connection, connect_to_mongo
+
+    async def _run() -> None:
+        await connect_to_mongo()
+        await init_db()
+        logging.info("Index initialization completed — closing connection")
+        await close_mongo_connection()
+
+    asyncio.run(_run())

@@ -11,9 +11,9 @@ from fastapi import HTTPException, status
 from pytz import timezone
 
 from core import logger
+from core.cruds.facility_crud import CRUDWarehouse
 from core.cruds.inbox_crud import CRUDInbox
 from core.cruds.ticket_crud import CRUDTicket
-from core.cruds.warehouse_crud import CRUDWarehouse
 from core.models.ticket_model import TicketStatus
 from core.services.audit_service import get_audit_service
 from core.utils.ticket_generator import ticket_generator

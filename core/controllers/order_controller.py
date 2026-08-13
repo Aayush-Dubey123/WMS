@@ -13,9 +13,9 @@ from pymongo.errors import OperationFailure, PyMongoError
 from pytz import timezone
 
 from core import logger
+from core.cruds.facility_crud import CRUDWarehouse
 from core.cruds.item_crud import CRUDItem
 from core.cruds.order_crud import CRUDOrder
-from core.cruds.warehouse_crud import CRUDWarehouse
 from core.database.database import MongoDatabase, get_mongo_client
 from core.models.order_model import OrderStatus
 from core.models.ticket_model import TicketStatus

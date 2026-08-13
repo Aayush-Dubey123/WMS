@@ -78,7 +78,7 @@ async def test_full_outbound_order_lifecycle(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=staff_user)), \
-         patch("core.cruds.warehouse_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value={"id": "607f1f77bcf86cd799439022"})), \
+         patch("core.cruds.facility_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value={"id": "607f1f77bcf86cd799439022"})), \
          patch("core.cruds.order_crud.CRUDOrder.get_by_order_id", AsyncMock(side_effect=mock_get_by_order_id)), \
          patch("core.cruds.order_crud.CRUDOrder.create", AsyncMock(return_value=order_doc)), \
          patch("core.cruds.order_crud.CRUDOrder.update", AsyncMock(side_effect=lambda id, update_in, session=None: reserved_order_doc if update_in.get("status") == "RESERVED" else (packed_order_doc if update_in.get("status") == "PACKED" else shipped_order_doc))), \

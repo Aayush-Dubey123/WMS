@@ -1,5 +1,5 @@
 """
-warehouse_model.py — Warehouse persistence model.
+facility_model.py — Warehouse facility persistence model.
 
 Defines Warehouse document schema stored in MongoDB warehouses collection.
 """

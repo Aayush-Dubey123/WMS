@@ -1,5 +1,5 @@
 """
-warehouse_controller.py — Controller for warehouse facility operations.
+facility_controller.py — Controller for warehouse facility operations.
 
 Manages warehouse creation, listing, updating, and audit mutation logging.
 """
@@ -10,7 +10,7 @@ from fastapi import HTTPException, status
 from pytz import timezone
 
 from core import logger
-from core.cruds.warehouse_crud import CRUDWarehouse
+from core.cruds.facility_crud import CRUDWarehouse
 from core.services.audit_service import get_audit_service
 
 logging = logger(__name__)

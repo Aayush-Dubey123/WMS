@@ -1,5 +1,5 @@
 """
-warehouse_request.py — Request schemas for warehouse management endpoints.
+facility_request.py — Request schemas for warehouse facility management endpoints.
 
 Defines Pydantic models for Warehouse creation and updates.
 """

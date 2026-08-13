@@ -10,8 +10,8 @@ from fastapi import HTTPException, status
 from pytz import timezone
 
 from core import logger
+from core.cruds.facility_crud import CRUDWarehouse
 from core.cruds.storage_crud import CRUDStorageLocation
-from core.cruds.warehouse_crud import CRUDWarehouse
 from core.services.audit_service import get_audit_service
 
 logging = logger(__name__)

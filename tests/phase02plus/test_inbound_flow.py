@@ -91,7 +91,7 @@ async def test_end_to_end_inbound_flow(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(side_effect=lambda id: staff_user if id == staff_user["id"] else manager_user)), \
-         patch("core.cruds.warehouse_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value=wh_doc)), \
+         patch("core.cruds.facility_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value=wh_doc)), \
          patch("core.cruds.inbox_crud.CRUDInbox.get_by_tracking", AsyncMock(return_value=inbox_doc)), \
          patch("core.controllers.arrival_controller.ticket_generator.generate_ticket_id", AsyncMock(return_value="RNO-20260813-001")), \
          patch("core.cruds.ticket_crud.CRUDTicket.create", AsyncMock(return_value=ticket_doc)), \
@@ -190,7 +190,7 @@ async def test_unannounced_arrival_no_ticket_flag(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=staff_user)), \
-         patch("core.cruds.warehouse_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value=wh_doc)), \
+         patch("core.cruds.facility_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value=wh_doc)), \
          patch("core.controllers.arrival_controller.ticket_generator.generate_ticket_id", AsyncMock(return_value="LAX-20260813-001")), \
          patch("core.cruds.ticket_crud.CRUDTicket.create", AsyncMock(return_value=unannounced_ticket)), \
          patch("core.services.audit_service.CRUDAuditLog.create", AsyncMock(return_value={"id": "audit_arr"})):

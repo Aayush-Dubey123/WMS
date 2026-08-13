@@ -1,5 +1,5 @@
 """
-warehouse_response.py — Response schemas for warehouse management endpoints.
+facility_response.py — Response schemas for warehouse facility management endpoints.
 
 Defines WarehouseResponse and WarehouseListResponse models.
 """

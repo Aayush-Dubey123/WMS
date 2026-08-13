@@ -4,7 +4,7 @@ main.py — Application entry point.
 Run with:
     python main.py
     OR
-    uvicorn core.apis.api:app --reload --port 8000
+    uvicorn main:app --reload --port 8000
 
 The import here is intentionally minimal — all setup happens inside api.py.
 main.py is only the launcher.
@@ -12,11 +12,11 @@ main.py is only the launcher.
 
 import uvicorn
 
-from core.apis.api import app as app
+from core.apis.api import app as app  # noqa: F401 — re-exported for uvicorn main:app
 
 if __name__ == "__main__":
     uvicorn.run(
-        "app.main:app",
+        "main:app",
         host="0.0.0.0",
         port=8000,
         reload=True,

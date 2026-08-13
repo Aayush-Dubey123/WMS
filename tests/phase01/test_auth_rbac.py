@@ -105,8 +105,8 @@ async def test_owner_create_warehouse(async_client: AsyncClient):
 
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=owner_user)), \
-         patch("core.cruds.warehouse_crud.CRUDWarehouse.get_by_code", AsyncMock(return_value=None)), \
-         patch("core.cruds.warehouse_crud.CRUDWarehouse.create", AsyncMock(return_value=wh_doc)), \
+         patch("core.cruds.facility_crud.CRUDWarehouse.get_by_code", AsyncMock(return_value=None)), \
+         patch("core.cruds.facility_crud.CRUDWarehouse.create", AsyncMock(return_value=wh_doc)), \
          patch("core.services.audit_service.CRUDAuditLog.create", AsyncMock(return_value={"id": "audit1"})):
 
         mock_decode.return_value = {"sub": owner_user["id"], "type": "access", "role": "OWNER"}
@@ -160,9 +160,9 @@ async def test_owner_create_manager(async_client: AsyncClient):
     with patch("commons.auth.decodeJWT") as mock_decode, \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=owner_user)), \
          patch("core.cruds.user_crud.CRUDUser.get_by_email", AsyncMock(return_value=None)), \
-         patch("core.cruds.warehouse_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value=wh_doc)), \
+         patch("core.cruds.facility_crud.CRUDWarehouse.get_by_id", AsyncMock(return_value=wh_doc)), \
          patch("core.cruds.user_crud.CRUDUser.create", AsyncMock(return_value=created_mgr)), \
-         patch("core.cruds.warehouse_crud.CRUDWarehouse.update", AsyncMock(return_value=wh_doc)), \
+         patch("core.cruds.facility_crud.CRUDWarehouse.update", AsyncMock(return_value=wh_doc)), \
          patch("core.services.audit_service.CRUDAuditLog.create", AsyncMock(return_value={"id": "audit2"})):
 
         mock_decode.return_value = {"sub": owner_user["id"], "type": "access", "role": "OWNER"}
@@ -348,9 +348,9 @@ async def test_audit_log_recorded_on_mutations(async_client: AsyncClient):
     audit_mock = AsyncMock(return_value={"id": "audit_row_123"})
     with patch("commons.auth.decodeJWT", return_value={"sub": "owner1", "type": "access", "role": "OWNER"}), \
          patch("core.cruds.user_crud.CRUDUser.get_by_id", AsyncMock(return_value=owner_user)), \
-         patch("core.cruds.warehouse_crud.CRUDWarehouse.get_by_code", AsyncMock(return_value=None)), \
-         patch("core.cruds.warehouse_crud.CRUDWarehouse.create", AsyncMock(return_value=wh_doc)), \
-         patch("core.controllers.warehouse_controller.get_audit_service", return_value=AsyncMock(log_mutation=audit_mock)):
+         patch("core.cruds.facility_crud.CRUDWarehouse.get_by_code", AsyncMock(return_value=None)), \
+         patch("core.cruds.facility_crud.CRUDWarehouse.create", AsyncMock(return_value=wh_doc)), \
+         patch("core.controllers.facility_controller.get_audit_service", return_value=AsyncMock(log_mutation=audit_mock)):
 
         headers = {"Authorization": "Bearer token"}
         res = await async_client.post("/warehouses", json={"code": "RNO", "name": "Reno Warehouse", "address": "123 St"}, headers=headers)
