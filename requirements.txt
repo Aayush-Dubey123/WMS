@@ -1,0 +1,92 @@
+# Web Framework & API
+# fastapi:
+#   Used to build the API app, declare routes, validate requests, and generate docs.
+#   Main usage: core/apis/api.py, core/apis/routes/*.py
+fastapi==0.115.0
+
+# uvicorn:
+#   ASGI server used to run the FastAPI application locally.
+#   Main usage: main.py
+uvicorn[standard]==0.30.0
+
+# Data Validation
+# pydantic:
+#   Used for request and response schemas so FastAPI can validate input/output.
+#   Main usage: core/apis/schemas/requests/user_request.py,
+#   core/apis/schemas/responses/user_responses.py
+pydantic==2.9.0
+
+# email-validator:
+#   Adds proper email validation support for Pydantic's EmailStr type.
+#   Main usage: request/response schema files that use EmailStr
+email-validator>=2.0.0
+
+# python-multipart:
+#   Needed by FastAPI when working with form-data and file uploads.
+#   Not heavily used in the current tutorial, but commonly installed in FastAPI projects.
+python-multipart>=0.0.6
+
+# Security & Authentication
+# PyJWT:
+#   Used to create and decode JWT access tokens.
+#   Main usage: commons/auth.py
+PyJWT>=2.1.0
+
+# passlib[bcrypt] and bcrypt:
+#   Used to hash passwords securely and verify them during login.
+#   Main usage: commons/auth.py
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+# python-dotenv:
+#   Loads values from .env into os.environ during local development.
+#   Main usage: commons/auth.py, core/utils/email/email_helper.py,
+#   core/utils/email/email_template_generator.py
+python-dotenv==1.0.0
+
+# Database & ODM (MongoDB)
+# motor:
+#   Async MongoDB driver used underneath ODMantic.
+#   Main usage: core/database/database.py
+motor==3.7.1
+
+# pymongo:
+#   Base MongoDB driver package used by Motor and related MongoDB tooling.
+#   Main usage: transitively through database connection code
+pymongo==4.13.2
+
+# odmantic:
+#   ODM layer used to define models and run type-safe MongoDB queries.
+#   Main usage: core/models/*.py, core/cruds/*.py, core/database/database.py
+odmantic==1.0.2
+
+# Email (async SMTP)
+# aiosmtplib:
+#   Sends emails asynchronously so SMTP calls do not block the FastAPI event loop.
+#   Main usage: core/utils/email/email_helper.py
+aiosmtplib==3.0.0
+
+# Utilities
+# python-dateutil and pytz:
+#   Common date/time utilities. Useful in real projects for timezone-aware handling.
+#   Present as standard supporting utilities for backend work.
+python-dateutil>=2.8.1
+pytz>=2020.1
+
+# aiofiles:
+#   Async file handling utility, commonly used for uploads/log processing.
+#   Not central in the current tutorial, but useful in backend projects.
+aiofiles>=0.5.0
+
+# Settings & Config
+pydantic-settings>=2.4.0
+
+# Testing & HTTP Client
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.27.0
+
+# Reports & AI Utilities
+openpyxl>=3.1.0
+opencv-python-headless>=4.9.0.80
+

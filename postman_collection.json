@@ -1,0 +1,1518 @@
+{
+  "info": {
+    "name": "Whitfield Fulfillment WMS API Collection",
+    "description": "Postman Collection for Whitfield Fulfillment WMS Backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "[Health] Get Health",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "v1",
+            "health"
+          ]
+        },
+        "description": "Retrieve application health status.\n\nVerifies API server status and underlying MongoDB database connectivity.\n\nReturns:\n    HealthResponse: Health status information.\n\nRaises:\n    HTTPException 503: Service unavailable if database is disconnected.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Health] Get Health",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "Retrieve application health status.\n\nVerifies API server status and underlying MongoDB database connectivity.\n\nReturns:\n    HealthResponse: Health status information.\n\nRaises:\n    HTTPException 503: Service unavailable if database is disconnected.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Authentication] Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Authenticate user credentials and issue access and refresh tokens.\n\nVerifies email address and password against stored password hash.\n\nArgs:\n    request (LoginRequest): Login payload containing email and password.\n\nReturns:\n    TokenResponse: Access and refresh tokens with expiration.\n\nRaises:\n    HTTPException 401: Invalid credentials.\n    HTTPException 403: User account inactive.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Authentication] Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/refresh",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "refresh"
+          ]
+        },
+        "description": "Refresh JWT access token.\n\nValidates refresh token and issues a new access/refresh token pair.\n\nArgs:\n    request (RefreshTokenRequest): Request payload containing refresh token string.\n\nReturns:\n    TokenResponse: Fresh access and refresh tokens.\n\nRaises:\n    HTTPException 401: Expired or invalid refresh token.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Authentication] Get Me",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/me",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        },
+        "description": "Retrieve authenticated user profile.\n\nReturns profile information, role, assigned warehouse, and tier for active user.\n\nArgs:\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    UserMeResponse: Authenticated user details.\n\nRaises:\n    HTTPException 401: Unauthorized access.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Warehouses] Create Warehouse",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/warehouses",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "warehouses"
+          ]
+        },
+        "description": "Create a new warehouse facility (Owner only).\n\nArgs:\n    request (WarehouseCreateRequest): Warehouse creation parameters.\n    current_user (dict): Authenticated user (OWNER role required).\n\nReturns:\n    WarehouseResponse: Created warehouse details.\n\nRaises:\n    HTTPException 400: Duplicate warehouse code.\n    HTTPException 403: Forbidden if not Owner.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Warehouses] List Warehouses",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/warehouses",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "warehouses"
+          ]
+        },
+        "description": "List all warehouse facilities.\n\nArgs:\n    skip (int): Pagination offset count.\n    limit (int): Maximum records to return.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    WarehouseListResponse: List of warehouse facilities.\n\nRaises:\n    HTTPException 403: Forbidden for Staff.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Warehouses] Get Warehouse",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/warehouses/{id}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "warehouses",
+            "{id}"
+          ]
+        },
+        "description": "Retrieve warehouse facility details by ID.\n\nArgs:\n    id (str): Warehouse ID string.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    WarehouseResponse: Warehouse details.\n\nRaises:\n    HTTPException 404: Warehouse not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Warehouses] Update Warehouse",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/warehouses/{id}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "warehouses",
+            "{id}"
+          ]
+        },
+        "description": "Update warehouse facility details (Owner only).\n\nArgs:\n    id (str): Warehouse ID string.\n    request (WarehouseUpdateRequest): Update payload.\n    current_user (dict): Authenticated user (OWNER role required).\n\nReturns:\n    WarehouseResponse: Updated warehouse details.\n\nRaises:\n    HTTPException 404: Warehouse not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Users] Create Manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/users/managers",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users",
+            "managers"
+          ]
+        },
+        "description": "Create a Manager user account assigned to a warehouse (Owner only).\n\nArgs:\n    request (ManagerCreateRequest): Manager account payload.\n    current_user (dict): Authenticated user (OWNER role required).\n\nReturns:\n    UserResponse: Created Manager user object.\n\nRaises:\n    HTTPException 400: Email already registered or invalid warehouse.\n    HTTPException 403: Forbidden for non-Owners.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Users] Create Staff",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/users/staff",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users",
+            "staff"
+          ]
+        },
+        "description": "Create a Staff user account scoped to Manager's warehouse (Manager only).\n\nArgs:\n    request (StaffCreateRequest): Staff account payload.\n    current_user (dict): Authenticated user (MANAGER role required).\n\nReturns:\n    UserResponse: Created Staff user object.\n\nRaises:\n    HTTPException 400: Email already registered.\n    HTTPException 403: Forbidden for non-Managers.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Users] List Users",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/users",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users"
+          ]
+        },
+        "description": "List user accounts subject to RBAC and warehouse scoping.\n\nArgs:\n    role (Optional[str]): Role filter.\n    skip (int): Offset count.\n    limit (int): Maximum records.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    UserListResponse: List of matching users."
+      },
+      "response": []
+    },
+    {
+      "name": "[Users] Update Staff",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/users/staff/{id}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users",
+            "staff",
+            "{id}"
+          ]
+        },
+        "description": "Update staff user account properties (experience tier, function roles).\n\nArgs:\n    id (str): Staff user ID.\n    request (StaffUpdateRequest): Update parameters payload.\n    current_user (dict): Authenticated user (MANAGER or OWNER).\n\nReturns:\n    UserResponse: Updated staff object.\n\nRaises:\n    HTTPException 404: Staff user not found.\n    HTTPException 403: Cross-warehouse update prohibited.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Users] Deactivate User",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/users/{id}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users",
+            "{id}"
+          ]
+        },
+        "description": "Deactivate a user account (soft delete).\n\nDeactivating a Manager requires reassigning active staff members using reassign_to_manager_id.\n\nArgs:\n    id (str): Target user ID to deactivate.\n    deactivate_payload (Optional[ManagerDeactivateRequest]): Optional reassignment payload.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    UserResponse: Deactivated user object.\n\nRaises:\n    HTTPException 400: Active staff exist without reassignment.\n    HTTPException 404: User not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Audit Log] Get Audit Logs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/audit",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "audit"
+          ]
+        },
+        "description": "Retrieve system audit log records (Owner and Manager roles only).\n\nArgs:\n    actor_id (Optional[str]): Actor ID filter.\n    collection (Optional[str]): Target collection filter.\n    action (Optional[str]): Action name filter.\n    skip (int): Offset count.\n    limit (int): Maximum records.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    AuditLogListResponse: List of audit log records and total count.\n\nRaises:\n    HTTPException 403: Prohibited for Staff role.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Inbox & Announcements] Announce Shipment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/inbox",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "inbox"
+          ]
+        },
+        "description": "Announce an incoming parcel shipment (status ANNOUNCED).\n\nArgs:\n    request (InboxAnnounceRequest): Parcel announcement payload.\n    current_user (dict): Authenticated user dictionary.\n\nReturns:\n    InboxResponse: Created inbox shipment object.\n\nRaises:\n    HTTPException 404: Warehouse not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Inbox & Announcements] List Shipments",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/inbox",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "inbox"
+          ]
+        },
+        "description": "List inbox shipment announcements filterable by status.\n\nArgs:\n    status_filter (Optional[str]): Status filter string.\n    skip (int): Pagination offset.\n    limit (int): Maximum records.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    InboxListResponse: List of inbox shipments."
+      },
+      "response": []
+    },
+    {
+      "name": "[Inbox & Announcements] Accept Shipment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/inbox/{id}/accept",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "inbox",
+            "{id}",
+            "accept"
+          ]
+        },
+        "description": "Accept an inbox shipment announcement (Manager/Owner only).\n\nArgs:\n    id (str): Inbox shipment ID string.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    InboxResponse: Updated inbox shipment object.\n\nRaises:\n    HTTPException 404: Shipment not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Inbox & Announcements] Decline Shipment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/inbox/{id}/decline",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "inbox",
+            "{id}",
+            "decline"
+          ]
+        },
+        "description": "Decline an inbox shipment announcement (Manager/Owner only).\n\nArgs:\n    id (str): Inbox shipment ID string.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    InboxResponse: Updated inbox shipment object.\n\nRaises:\n    HTTPException 404: Shipment not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Inbox & Announcements] Revert Shipment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/inbox/{id}/revert",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "inbox",
+            "{id}",
+            "revert"
+          ]
+        },
+        "description": "Revert an inbox shipment to NEEDS_SPEC state with comment (Manager/Owner only).\n\nArgs:\n    id (str): Inbox shipment ID string.\n    request (InboxRevertRequest): Revert comment payload.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    InboxResponse: Updated inbox shipment object with comment thread.\n\nRaises:\n    HTTPException 404: Shipment not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Arrivals & Ticketing] Process Arrival",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/arrivals",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "arrivals"
+          ]
+        },
+        "description": "Log physical parcel arrival at a warehouse facility.\n\nMatches carrier tracking number to an accepted inbox announcement or flags no_ticket_arrival=true,\ngenerating an atomic ticket ID ({WH}-{YYYYMMDD}-{SEQ:03d}).\n\nArgs:\n    request (ArrivalCreateRequest): Arrival payload (warehouse_id, tracking_number, no_ticket_arrival).\n    current_user (dict): Authenticated user (staff member).\n\nReturns:\n    TicketResponse: Created Ticket object.\n\nRaises:\n    HTTPException 404: Warehouse not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Ticketing, Inspection & Storage] Log Item Scan",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/tickets/{ticket_id}/items",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tickets",
+            "{ticket_id}",
+            "items"
+          ]
+        },
+        "description": "Log a scanned item unit under a ticket (requires Idempotency-Key header).\n\nEnforces Idempotency-Key header to prevent duplicate item creation on retries.\n\nArgs:\n    ticket_id (str): Ticket ID string (e.g. RNO-20260813-001).\n    request (ItemLogRequest): Item barcode scanning details.\n    idempotency_key (str): Idempotency key from header.\n    current_user (dict): Authenticated staff user dependency.\n\nReturns:\n    ItemResponse: Created item unit object.\n\nRaises:\n    HTTPException 400: Missing idempotency key.\n    HTTPException 404: Ticket not found.\n    HTTPException 409: Duplicate idempotency request.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Ticketing, Inspection & Storage] Submit Inspection",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/tickets/{id}/submit-inspection",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tickets",
+            "{id}",
+            "submit-inspection"
+          ]
+        },
+        "description": "Submit completed ticket item logging for Manager inspection review.\n\nTransitions ticket status to PENDING_INSPECTION.\n\nArgs:\n    id (str): Ticket ID string.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    TicketResponse: Updated ticket object.\n\nRaises:\n    HTTPException 404: Ticket not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Ticketing, Inspection & Storage] List Approvals",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/approvals",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "approvals"
+          ]
+        },
+        "description": "Retrieve manager queue of tickets pending inspection approval (Manager/Owner only).\n\nArgs:\n    skip (int): Pagination offset.\n    limit (int): Maximum items.\n    current_user (dict): Authenticated user (MANAGER or OWNER).\n\nReturns:\n    ApprovalQueueResponse: List of pending tickets."
+      },
+      "response": []
+    },
+    {
+      "name": "[Ticketing, Inspection & Storage] Approve Ticket",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/tickets/{id}/approve",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tickets",
+            "{id}",
+            "approve"
+          ]
+        },
+        "description": "Approve ticket inspection (Manager/Owner only).\n\nTransitions ticket and non-damaged items to SHIPMENT_ARRIVED (sellable stock).\n\nArgs:\n    id (str): Ticket ID string.\n    current_user (dict): Authenticated user (MANAGER or OWNER).\n\nReturns:\n    TicketResponse: Approved ticket object.\n\nRaises:\n    HTTPException 404: Ticket not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Ticketing, Inspection & Storage] Store Ticket",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/tickets/{id}/store",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tickets",
+            "{id}",
+            "store"
+          ]
+        },
+        "description": "Assign storage location code to ticket and attached items (transitions to STORED).\n\nArgs:\n    id (str): Ticket ID string.\n    request (StoreTicketRequest): Storage location payload.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    TicketResponse: Updated ticket object with assigned storage location.\n\nRaises:\n    HTTPException 404: Ticket not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Ticketing, Inspection & Storage] Upload Image",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/uploads",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "uploads"
+          ]
+        },
+        "description": "Upload item photo image file.\n\nArgs:\n    file (UploadFile): Image file stream (.jpg, .png, .webp).\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    dict: Image relative access URL.\n\nRaises:\n    HTTPException 400: Invalid file extension format.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Storage Locations] Create Storage Location",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/storage-locations",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "storage-locations"
+          ]
+        },
+        "description": "Create a new physical storage location bin (Manager/Owner only).\n\nConstructs combined location_code as {ZONE}-{RACK}-{BIN} (e.g. A-04-12).\n\nArgs:\n    request (StorageLocationCreateRequest): Storage location parameters.\n    current_user (dict): Authenticated user (MANAGER or OWNER).\n\nReturns:\n    StorageLocationResponse: Created storage location object.\n\nRaises:\n    HTTPException 400: Duplicate location code.\n    HTTPException 404: Warehouse not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Storage Locations] List Storage Locations",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/storage-locations",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "storage-locations"
+          ]
+        },
+        "description": "List physical storage locations for a warehouse facility.\n\nArgs:\n    warehouse_id (str): Warehouse ID query parameter.\n    skip (int): Pagination offset.\n    limit (int): Maximum records.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    StorageLocationListResponse: List of storage locations."
+      },
+      "response": []
+    },
+    {
+      "name": "[Orders & Fulfillment] Create Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/orders",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "orders"
+          ]
+        },
+        "description": "Intake a new customer order (status PENDING).\n\nArgs:\n    request (OrderCreateRequest): Order intake parameters.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    OrderResponse: Created order object.\n\nRaises:\n    HTTPException 400: Duplicate order ID.\n    HTTPException 404: Warehouse not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Orders & Fulfillment] Reserve Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/orders/{id}/reserve",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "orders",
+            "{id}",
+            "reserve"
+          ]
+        },
+        "description": "Atomically reserve stock for an order inside a MongoDB transaction (STORED -> RESERVED).\n\nConcurrent reservation attempts for identical units yield HTTP 409 Conflict.\n\nArgs:\n    id (str): Target order ID reference string.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    OrderResponse: Updated reserved order object.\n\nRaises:\n    HTTPException 400: Insufficient available stock.\n    HTTPException 404: Order not found.\n    HTTPException 409: Concurrent reservation conflict.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Orders & Fulfillment] Get Picklist",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/orders/{id}/picklist",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "orders",
+            "{id}",
+            "picklist"
+          ]
+        },
+        "description": "Generate picklist showing physical bin storage locations for reserved order units.\n\nArgs:\n    id (str): Order ID string.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    PicklistResponse: Picklist object containing item storage location codes.\n\nRaises:\n    HTTPException 404: Order not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Orders & Fulfillment] Pack Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/orders/{id}/pack",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "orders",
+            "{id}",
+            "pack"
+          ]
+        },
+        "description": "Confirm packed order weight and package dimensions (transitions status to PACKED).\n\nArgs:\n    id (str): Order ID string.\n    request (OrderPackRequest): Packing parameters.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    OrderResponse: Updated packed order object.\n\nRaises:\n    HTTPException 404: Order not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Orders & Fulfillment] Generate Label",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/orders/{id}/label",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "orders",
+            "{id}",
+            "label"
+          ]
+        },
+        "description": "Generate stub carrier shipping label and tracking number.\n\nArgs:\n    id (str): Order ID string.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    ShippingLabelResponse: Shipping label URL and tracking number.\n\nRaises:\n    HTTPException 404: Order not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Orders & Fulfillment] Ship Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/orders/{id}/ship",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "orders",
+            "{id}",
+            "ship"
+          ]
+        },
+        "description": "Ship customer order and transition reserved item units to SOLD state.\n\nArgs:\n    id (str): Order ID string.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    OrderResponse: Updated shipped order object.\n\nRaises:\n    HTTPException 404: Order not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Orders & Fulfillment] Cancel Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/orders/{id}/cancel",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "orders",
+            "{id}",
+            "cancel"
+          ]
+        },
+        "description": "Cancel order reservation and release items back to STORED status.\n\nArgs:\n    id (str): Order ID string.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    OrderResponse: Updated cancelled order object.\n\nRaises:\n    HTTPException 404: Order not found.\n    HTTPException 500: Internal server error."
+      },
+      "response": []
+    },
+    {
+      "name": "[Reporting & Export] Get Summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/reports/summary",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reports",
+            "summary"
+          ]
+        },
+        "description": "Retrieve executive dashboard summary metrics (todays_tickets, todays_sold, arrived_missed).\n\nArgs:\n    date (Optional[str]): Target date query parameter.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    ReportSummaryResponse: Executive dashboard summary metrics payload."
+      },
+      "response": []
+    },
+    {
+      "name": "[Reporting & Export] Get Arrived Today",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/reports/arrived-today",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reports",
+            "arrived-today"
+          ]
+        },
+        "description": "Retrieve detail feed of parcels/tickets arrived on target date.\n\nArgs:\n    date (Optional[str]): Target date query.\n    warehouse_id (Optional[str]): Warehouse filter.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    ReportFeedResponse: Detail feed of arrived tickets."
+      },
+      "response": []
+    },
+    {
+      "name": "[Reporting & Export] Get Sold Today",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/reports/sold-today",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reports",
+            "sold-today"
+          ]
+        },
+        "description": "Retrieve detail feed of item units sold on target date.\n\nArgs:\n    date (Optional[str]): Target date query.\n    warehouse_id (Optional[str]): Warehouse filter.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    ReportFeedResponse: Detail feed of sold items."
+      },
+      "response": []
+    },
+    {
+      "name": "[Reporting & Export] Get Stock Totals",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/reports/stock",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reports",
+            "stock"
+          ]
+        },
+        "description": "Retrieve manager stock totals aggregation (on-hand, available, reserved, damaged per product).\n\nArgs:\n    warehouse_id (Optional[str]): Warehouse ID filter.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    StockTotalsResponse: Aggregated stock totals."
+      },
+      "response": []
+    },
+    {
+      "name": "[Reporting & Export] Export Report",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/reports/export",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reports",
+            "export"
+          ]
+        },
+        "description": "Export report feed as downloadable file stream (.csv or .xlsx).\n\nArgs:\n    report_type (str): Report type string.\n    format (str): File format extension string.\n    date (Optional[str]): Target date query parameter.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    Response: Binary file response with attachment disposition."
+      },
+      "response": []
+    },
+    {
+      "name": "[Voice Pipeline] Transcribe Audio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/voice/transcribe",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "voice",
+            "transcribe"
+          ]
+        },
+        "description": "Transcribe uploaded voice audio to text string.\n\nArgs:\n    file (UploadFile): Audio file binary upload.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    TranscribeResponse: Audio transcript payload."
+      },
+      "response": []
+    },
+    {
+      "name": "[Voice Pipeline] Parse Transcript",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/voice/parse",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "voice",
+            "parse"
+          ]
+        },
+        "description": "Parse text transcript into structured unconfirmed draft item using LLM.\n\nArgs:\n    request (VoiceParseRequest): Parse parameters.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    VoiceDraftResponse: Created voice draft object."
+      },
+      "response": []
+    },
+    {
+      "name": "[Voice Pipeline] Confirm Draft",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/voice/drafts/{id}/confirm",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "voice",
+            "drafts",
+            "{id}",
+            "confirm"
+          ]
+        },
+        "description": "Confirm voice draft and write through identical Phase 2 item logging service pipeline.\n\nArgs:\n    id (str): Voice draft ID string.\n    request (VoiceConfirmRequest): Confirmed barcode and manual weight override.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    ItemResponse: Created item unit record payload."
+      },
+      "response": []
+    },
+    {
+      "name": "[Vision Measurement] Measure Package",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/vision/measure",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "vision",
+            "measure"
+          ]
+        },
+        "description": "Estimate package width and height from uploaded photo using ArUco reference marker.\n\nArgs:\n    file (UploadFile): Package photo upload binary.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    VisionMeasureResponse: Estimated package dimensions (weight ALWAYS manual)."
+      },
+      "response": []
+    },
+    {
+      "name": "[Natural Language Query] Process Nl Query",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/query",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "query"
+          ]
+        },
+        "description": "Execute natural language stock search using safe allow-listed query templates.\n\nArgs:\n    request (NLQueryRequest): Query prompt request payload.\n    current_user (dict): Authenticated user dependency.\n\nReturns:\n    NLQueryResponse: Result payload dictionary."
+      },
+      "response": []
+    },
+    {
+      "name": "[API Key Scripting Integration] List Api Keys",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api-keys",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api-keys"
+          ]
+        },
+        "description": "List active and revoked API keys created by current user.\n\nArgs:\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    ApiKeyListResponse: List of API key items (without raw secrets)."
+      },
+      "response": []
+    },
+    {
+      "name": "[API Key Scripting Integration] Create Api Key",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api-keys",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api-keys"
+          ]
+        },
+        "description": "Generate a new scoped API Key for external script integration.\n\nReturns the raw secret key ONCE upon creation.\n\nArgs:\n    request (ApiKeyCreateRequest): Key creation parameters.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    ApiKeyCreatedResponse: Created key object with raw_key."
+      },
+      "response": []
+    },
+    {
+      "name": "[API Key Scripting Integration] Revoke Api Key",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api-keys/{id}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api-keys",
+            "{id}"
+          ]
+        },
+        "description": "Revoke an API key.\n\nArgs:\n    id (str): API key ID.\n    current_user (dict): Authenticated user (OWNER or MANAGER).\n\nReturns:\n    ApiKeyItemResponse: Revoked key record."
+      },
+      "response": []
+    },
+    {
+      "name": "[Root] Root Ping",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": []
+        },
+        "description": "Root ping endpoint.\n\nReturns:\n    dict: Server status confirmation message."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "PASTE_TOKEN_HERE",
+      "type": "string"
+    }
+  ]
+}
