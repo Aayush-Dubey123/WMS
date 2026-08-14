@@ -130,7 +130,7 @@ function OrdersPageContent() {
         </>
       }
     >
-      <div className="mb-6 space-y-4 rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm p-4 shadow-sm">
+      <div className="mb-6 space-y-4 rounded-xl border border-border bg-card p-4 shadow-e1">
         <SearchField
           className="w-full"
           placeholder="Search order ID or customer..."
@@ -145,8 +145,8 @@ function OrdersPageContent() {
               className={
                 "rounded-full px-4 py-1.5 text-xs font-bold transition-all " +
                 (status === s
-                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/20"
-                  : "border border-slate-600/50 text-slate-300 hover:bg-slate-700/30 hover:border-slate-500")
+                  ? "bg-primary text-primary-foreground shadow-e1"
+                  : "border border-border text-muted-foreground hover:bg-surface-hover hover:border-border-strong")
               }
             >
               {s}
@@ -207,9 +207,9 @@ function OrdersPageContent() {
       {/* Create Order Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader className="border-b border-slate-700/50 pb-4">
+          <DialogHeader className="border-b border-border pb-4">
             <DialogTitle className="text-lg font-bold">Create New Order</DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">Fill in the details to create a new order for fulfillment</DialogDescription>
+            <DialogDescription className="text-xs text-muted-foreground">Fill in the details to create a new order for fulfillment</DialogDescription>
           </DialogHeader>
 
           <Form {...form}>

@@ -34,21 +34,21 @@ const DEMO_CREDENTIALS = [
     email: "owner@whitfield.com",
     password: "OwnerPass123!",
     description: "Full system access, facility management",
-    color: "bg-blue-600",
+    color: "bg-primary",
   },
   {
     role: "MANAGER",
     email: "manager@whitfield.com",
     password: "ManagerPass123!",
     description: "Warehouse operations, staff management",
-    color: "bg-purple-600",
+    color: "bg-info",
   },
   {
     role: "STAFF",
     email: "staff@whitfield.com",
     password: "StaffPass123!",
     description: "Operational tasks, receiving, packing",
-    color: "bg-green-600",
+    color: "bg-warning",
   },
 ];
 
@@ -137,19 +137,19 @@ function LoginPage() {
   // Show success animation
   if (showSuccess && isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="text-center space-y-6 animate-in fade-in duration-500">
           <div className="flex justify-center">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary to-cyan-400 rounded-full blur-xl opacity-50 animate-pulse" />
-              <div className="relative grid size-20 place-items-center rounded-full bg-gradient-to-br from-primary to-cyan-400 text-white">
+              <div className="absolute inset-0 bg-primary rounded-full blur-xl opacity-30 animate-pulse" />
+              <div className="relative grid size-20 place-items-center rounded-full bg-primary text-primary-foreground">
                 <CheckCircle2 className="size-10" />
               </div>
             </div>
           </div>
           <div className="space-y-2">
-            <h2 className="text-3xl font-bold text-white">Welcome!</h2>
-            <p className="text-slate-400">Redirecting to dashboard...</p>
+            <h2 className="text-3xl font-bold text-foreground">Welcome!</h2>
+            <p className="text-muted-foreground">Redirecting to dashboard...</p>
           </div>
           <div className="flex justify-center">
             <Loader2 className="size-5 animate-spin text-primary" />
@@ -160,32 +160,29 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Left side - Premium Branding */}
+          {/* Left side - Branding */}
           <div className="hidden lg:flex flex-col justify-center space-y-10">
             {/* Logo & Title */}
             <div className="space-y-6">
               <div className="flex items-end gap-4">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl blur-2xl opacity-40" />
-                  <div className="relative grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-primary to-cyan-400 text-white shadow-2xl">
-                    <ShieldCheck className="size-8" />
-                  </div>
+                <div className="grid size-16 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-e2">
+                  <ShieldCheck className="size-8" />
                 </div>
                 <div>
-                  <h1 className="text-5xl font-black text-white tracking-tight">Whitfield</h1>
-                  <p className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                  <h1 className="text-5xl font-black text-foreground tracking-tight">Whitfield</h1>
+                  <p className="text-xl font-bold text-primary">
                     WMS
                   </p>
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-xl font-semibold text-white">
+                <p className="text-xl font-semibold text-foreground">
                   Enterprise Warehouse Management
                 </p>
-                <p className="text-slate-400 leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed">
                   Real-time operations platform for modern fulfillment centers
                 </p>
               </div>
@@ -212,53 +209,47 @@ function LoginPage() {
               ].map((feature, i) => (
                 <div key={i} className="flex gap-4 group">
                   <div className="flex-shrink-0 mt-1">
-                    <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-400/20 to-blue-500/20 group-hover:from-cyan-400/40 group-hover:to-blue-500/40 transition-all duration-300">
-                      <feature.icon className="h-5 w-5 text-cyan-400" />
+                    <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-accent transition-colors duration-300">
+                      <feature.icon className="h-5 w-5 text-primary" />
                     </div>
                   </div>
                   <div>
-                    <p className="font-semibold text-white text-sm">{feature.title}</p>
-                    <p className="text-slate-400 text-sm">{feature.desc}</p>
+                    <p className="font-semibold text-foreground text-sm">{feature.title}</p>
+                    <p className="text-muted-foreground text-sm">{feature.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Right side - Premium Login Card */}
-          <Card className="border-slate-700/50 bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
-            {/* Gradient Background Effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 pointer-events-none" />
-
-            <CardHeader className="space-y-4 text-center pb-8 relative z-10">
+          {/* Right side - Login Card */}
+          <Card className="border-border bg-card shadow-e3 relative overflow-hidden">
+            <CardHeader className="space-y-4 text-center pb-8">
               <div className="flex justify-center lg:hidden mb-2">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl blur-xl opacity-40" />
-                  <div className="relative grid size-14 place-items-center rounded-xl bg-gradient-to-br from-primary to-cyan-400 text-white">
-                    <ShieldCheck className="size-7" />
-                  </div>
+                <div className="grid size-14 place-items-center rounded-xl bg-primary text-primary-foreground">
+                  <ShieldCheck className="size-7" />
                 </div>
               </div>
               <div>
-                <CardTitle className="text-3xl font-black text-white">Access WMS</CardTitle>
-                <CardDescription className="text-base mt-2 text-slate-400">
+                <CardTitle className="text-3xl font-black text-foreground">Access WMS</CardTitle>
+                <CardDescription className="text-base mt-2 text-muted-foreground">
                   Sign in to manage your warehouse operations
                 </CardDescription>
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-6 relative z-10">
+            <CardContent className="space-y-6">
               <Tabs defaultValue="demo" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-slate-700/30 border border-slate-600/30 p-1 rounded-lg">
+                <TabsList className="grid w-full grid-cols-2 bg-secondary border border-border p-1 rounded-lg">
                   <TabsTrigger
                     value="demo"
-                    className="rounded-md font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-white"
+                    className="rounded-md font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-e1"
                   >
                     Quick Demo
                   </TabsTrigger>
                   <TabsTrigger
                     value="credentials"
-                    className="rounded-md font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-white"
+                    className="rounded-md font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-e1"
                   >
                     Sign In
                   </TabsTrigger>
@@ -266,7 +257,7 @@ function LoginPage() {
 
                 {/* Demo Tab */}
                 <TabsContent value="demo" className="space-y-4 mt-8">
-                  <p className="text-sm text-slate-400 font-medium">
+                  <p className="text-sm text-muted-foreground font-medium">
                     Select your role for instant access:
                   </p>
                   <div className="space-y-3">
@@ -275,9 +266,8 @@ function LoginPage() {
                         key={cred.role}
                         disabled={isLoading}
                         onClick={() => handleDemoLogin(idx)}
-                        className="w-full group relative overflow-hidden rounded-xl border border-slate-600/30 bg-slate-700/20 hover:bg-slate-700/40 disabled:opacity-50 disabled:cursor-not-allowed p-4 transition-all duration-300"
+                        className="w-full group relative overflow-hidden rounded-xl border border-border bg-secondary hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed p-4 transition-all duration-300"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         <div className="relative flex items-center justify-between">
                           <div className="text-left">
                             <div className="flex items-center gap-3 mb-1">
@@ -287,14 +277,14 @@ function LoginPage() {
                                 {cred.role}
                               </Badge>
                             </div>
-                            <p className="text-sm text-slate-400 font-medium">
+                            <p className="text-sm text-muted-foreground font-medium">
                               {cred.description}
                             </p>
                           </div>
                           {isLoading && selectedDemo === idx ? (
                             <Loader2 className="size-5 animate-spin text-primary flex-shrink-0" />
                           ) : (
-                            <div className="size-5 rounded-full bg-slate-600/30 group-hover:bg-cyan-400/30 transition-colors" />
+                            <div className="size-5 rounded-full bg-border group-hover:bg-primary/30 transition-colors" />
                           )}
                         </div>
                       </button>
@@ -311,7 +301,7 @@ function LoginPage() {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-semibold text-slate-200">
+                            <FormLabel className="text-sm font-semibold text-foreground">
                               Email Address
                             </FormLabel>
                             <FormControl>
@@ -320,7 +310,7 @@ function LoginPage() {
                                 placeholder="admin@whitfield.com"
                                 disabled={isLoading}
                                 autoComplete="email"
-                                className="bg-slate-700/30 border-slate-600/30 text-white placeholder:text-slate-500 focus:border-cyan-500/50 focus:ring-cyan-500/20 h-11 rounded-lg"
+                                className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 h-11 rounded-lg"
                                 {...field}
                               />
                             </FormControl>
@@ -334,7 +324,7 @@ function LoginPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-semibold text-slate-200">
+                            <FormLabel className="text-sm font-semibold text-foreground">
                               Password
                             </FormLabel>
                             <FormControl>
@@ -343,7 +333,7 @@ function LoginPage() {
                                 placeholder="••••••••"
                                 disabled={isLoading}
                                 autoComplete="current-password"
-                                className="bg-slate-700/30 border-slate-600/30 text-white placeholder:text-slate-500 focus:border-cyan-500/50 focus:ring-cyan-500/20 h-11 rounded-lg"
+                                className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 h-11 rounded-lg"
                                 {...field}
                               />
                             </FormControl>
@@ -356,7 +346,7 @@ function LoginPage() {
                         type="submit"
                         disabled={isLoading}
                         size="lg"
-                        className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold rounded-lg transition-all duration-300 shadow-lg hover:shadow-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full h-12 bg-primary hover:brightness-110 text-primary-foreground font-bold rounded-lg transition-all duration-300 shadow-e2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isLoading ? (
                           <>
@@ -373,11 +363,11 @@ function LoginPage() {
               </Tabs>
 
               {/* Info Box */}
-              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 mt-6">
-                <p className="text-xs font-semibold text-amber-200 mb-1">
-                  🔐 Development Environment
+              <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 mt-6">
+                <p className="text-xs font-semibold text-warning mb-1">
+                  Development Environment
                 </p>
-                <p className="text-xs text-amber-100/70">
+                <p className="text-xs text-warning/80">
                   Use demo credentials or your production account. In production, only verified credentials work.
                 </p>
               </div>

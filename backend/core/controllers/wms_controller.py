@@ -1273,22 +1273,162 @@ class OrderController:
                 detail="Internal Server Error",
             )
 
-    async def ship_order(self, order_id: str, current_user: dict, tracking: str | None = None, label_url: str | None = None) -> dict:
+    async def pack_order(self, order_id: str, pack_data: dict, current_user: dict) -> dict:
         """
-        Ship a reserved order (mark as SOLD).
+        Confirm packed weight and dimensions for a reserved order (RESERVED -> PACKED).
+
+        Args:
+            order_id (str): Order ID string.
+            pack_data (dict): Packed weight and dimensions (packed_weight, width, height, length).
+            current_user (dict): Authenticated user dictionary.
+
+        Returns:
+            dict: Updated packed order payload.
+
+        Raises:
+            HTTPException 404: Order not found.
+            HTTPException 400: Order not in RESERVED status.
+        """
+        try:
+            logging.info(f"Executing OrderController.pack_order for: {order_id}")
+            order = await self._order_crud.get_by_order_id(order_id=order_id)
+            if not order:
+                order = await self._order_crud.get_by_id(id=order_id)
+
+            if not order:
+                logging.warning(f"Order packing failed: order {order_id} not found")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Order not found",
+                )
+
+            if order.get("status") != OrderStatus.RESERVED.value:
+                logging.warning(f"Order packing rejected: order {order_id} is in status {order.get('status')}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Order must be in RESERVED status to pack",
+                )
+
+            updated = await self._order_crud.update(
+                id=order["id"],
+                update_in={
+                    "status": OrderStatus.PACKED.value,
+                    "packed_weight": pack_data.get("packed_weight"),
+                    "packed_dims": {
+                        "width": pack_data.get("width"),
+                        "height": pack_data.get("height"),
+                        "length": pack_data.get("length"),
+                    },
+                    "updated_at": datetime.now(timezone("UTC")).strftime("%Y-%m-%d %H:%M:%S.%f"),
+                },
+            )
+
+            await self._audit_service.log_mutation(
+                actor=current_user,
+                action="PACK",
+                collection="orders",
+                doc_id=order["id"],
+                before=order,
+                after=updated,
+            )
+            logging.info(f"Order PACKED: {order_id}")
+            return updated
+        except HTTPException:
+            raise
+        except Exception as error:
+            logging.error(f"Error in OrderController.pack_order: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal Server Error",
+            )
+
+    async def generate_label(self, order_id: str, current_user: dict) -> dict:
+        """
+        Generate a stub carrier shipping label and tracking number for a packed order.
 
         Args:
             order_id (str): Order ID string.
             current_user (dict): Authenticated user dictionary.
-            tracking (Optional[str]): Shipping tracking number.
-            label_url (Optional[str]): Shipping label URL.
+
+        Returns:
+            dict: Shipping label payload (order_id, carrier, tracking_number, label_url).
+
+        Raises:
+            HTTPException 404: Order not found.
+            HTTPException 400: Order not in PACKED status.
+        """
+        try:
+            logging.info(f"Executing OrderController.generate_label for: {order_id}")
+            order = await self._order_crud.get_by_order_id(order_id=order_id)
+            if not order:
+                order = await self._order_crud.get_by_id(id=order_id)
+
+            if not order:
+                logging.warning(f"Label generation failed: order {order_id} not found")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Order not found",
+                )
+
+            if order.get("status") != OrderStatus.PACKED.value:
+                logging.warning(f"Label generation rejected: order {order_id} is in status {order.get('status')}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Order must be in PACKED status to generate a label",
+                )
+
+            tracking_number = f"WMS{order['order_id'].replace('-', '')[:10].upper()}{order['id'][-6:].upper()}"
+            label_url = f"/uploads/labels/{order['id']}.pdf"
+
+            await self._order_crud.update(
+                id=order["id"],
+                update_in={
+                    "tracking_number": tracking_number,
+                    "label_url": label_url,
+                    "updated_at": datetime.now(timezone("UTC")).strftime("%Y-%m-%d %H:%M:%S.%f"),
+                },
+            )
+
+            await self._audit_service.log_mutation(
+                actor=current_user,
+                action="GENERATE_LABEL",
+                collection="orders",
+                doc_id=order["id"],
+                before=order,
+                after={"tracking_number": tracking_number, "label_url": label_url},
+            )
+            logging.info(f"Label generated for order: {order_id}")
+            return {
+                "order_id": order["order_id"],
+                "carrier": "Whitfield Stub Carrier",
+                "tracking_number": tracking_number,
+                "label_url": label_url,
+            }
+        except HTTPException:
+            raise
+        except Exception as error:
+            logging.error(f"Error in OrderController.generate_label: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal Server Error",
+            )
+
+    async def ship_order(self, order_id: str, current_user: dict, tracking: str | None = None, label_url: str | None = None) -> dict:
+        """
+        Ship a packed order with a generated label (PACKED -> SHIPPED).
+
+        Args:
+            order_id (str): Order ID string.
+            current_user (dict): Authenticated user dictionary.
+            tracking (Optional[str]): Shipping tracking number override.
+            label_url (Optional[str]): Shipping label URL override.
 
         Returns:
             dict: Updated order payload.
 
         Raises:
             HTTPException 404: Order not found.
-            HTTPException 400: Order not in RESERVED status.
+            HTTPException 400: Order not in PACKED status, or missing a generated label.
         """
         try:
             logging.info(f"Executing OrderController.ship_order for: {order_id}")
@@ -1303,20 +1443,40 @@ class OrderController:
                     detail="Order not found",
                 )
 
-            if order.get("status") != OrderStatus.RESERVED.value:
+            if order.get("status") != OrderStatus.PACKED.value:
                 logging.warning(f"Order shipping rejected: order {order_id} is in status {order.get('status')}")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Order must be in RESERVED status to ship",
+                    detail="Order must be in PACKED status to ship",
+                )
+
+            final_tracking = tracking or order.get("tracking_number")
+            final_label = label_url or order.get("label_url")
+            if not final_tracking or not final_label:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Order must have a generated shipping label before it can ship",
                 )
 
             updated = await self._order_crud.update(
                 id=order["id"],
                 update_in={
-                    "status": OrderStatus.SOLD.value,
-                    "tracking_number": tracking,
-                    "label_url": label_url,
+                    "status": OrderStatus.SHIPPED.value,
+                    "tracking_number": final_tracking,
+                    "label_url": final_label,
                     "updated_at": datetime.now(timezone("UTC")).strftime("%Y-%m-%d %H:%M:%S.%f"),
+                },
+            )
+
+            # Transition reserved item units tied to this order to SOLD.
+            db = MongoDatabase()
+            await db.items.update_many(
+                {"order_id": order["order_id"], "status": TicketStatus.RESERVED.value},
+                {
+                    "$set": {
+                        "status": TicketStatus.SOLD.value,
+                        "updated_at": datetime.now(timezone("UTC")).strftime("%Y-%m-%d %H:%M:%S.%f"),
+                    }
                 },
             )
 
@@ -1334,6 +1494,81 @@ class OrderController:
             raise
         except Exception as error:
             logging.error(f"Error in OrderController.ship_order: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal Server Error",
+            )
+
+    async def cancel_order(self, order_id: str, current_user: dict) -> dict:
+        """
+        Cancel a pending or reserved order, releasing any reserved item units back to STORED.
+
+        Args:
+            order_id (str): Order ID string.
+            current_user (dict): Authenticated user dictionary.
+
+        Returns:
+            dict: Updated cancelled order payload.
+
+        Raises:
+            HTTPException 404: Order not found.
+            HTTPException 400: Order already packed, shipped, or cancelled.
+        """
+        try:
+            logging.info(f"Executing OrderController.cancel_order for: {order_id}")
+            order = await self._order_crud.get_by_order_id(order_id=order_id)
+            if not order:
+                order = await self._order_crud.get_by_id(id=order_id)
+
+            if not order:
+                logging.warning(f"Order cancellation failed: order {order_id} not found")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Order not found",
+                )
+
+            if order.get("status") not in (OrderStatus.PENDING.value, OrderStatus.RESERVED.value):
+                logging.warning(f"Order cancellation rejected: order {order_id} is in status {order.get('status')}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Order in status '{order.get('status')}' cannot be cancelled",
+                )
+
+            db = MongoDatabase()
+            if order.get("status") == OrderStatus.RESERVED.value:
+                await db.items.update_many(
+                    {"order_id": order["order_id"], "status": TicketStatus.RESERVED.value},
+                    {
+                        "$set": {
+                            "status": TicketStatus.STORED.value,
+                            "updated_at": datetime.now(timezone("UTC")).strftime("%Y-%m-%d %H:%M:%S.%f"),
+                        },
+                        "$unset": {"order_id": ""},
+                    },
+                )
+
+            updated = await self._order_crud.update(
+                id=order["id"],
+                update_in={
+                    "status": OrderStatus.CANCELLED.value,
+                    "updated_at": datetime.now(timezone("UTC")).strftime("%Y-%m-%d %H:%M:%S.%f"),
+                },
+            )
+
+            await self._audit_service.log_mutation(
+                actor=current_user,
+                action="CANCEL",
+                collection="orders",
+                doc_id=order["id"],
+                before=order,
+                after=updated,
+            )
+            logging.info(f"Order CANCELLED: {order_id}")
+            return updated
+        except HTTPException:
+            raise
+        except Exception as error:
+            logging.error(f"Error in OrderController.cancel_order: {error}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal Server Error",

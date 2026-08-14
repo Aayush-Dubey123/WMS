@@ -14,6 +14,19 @@ const map: Record<string, string> = {
   OWNER: "bg-primary/20 text-primary",
   MANAGER: "bg-info/20 text-info",
   STAFF: "bg-secondary text-secondary-foreground",
+  // Ticket lifecycle (TicketStatus enum)
+  ANNOUNCED: "bg-secondary text-foreground",
+  ACCEPTED: "bg-info/20 text-info",
+  ARRIVED: "bg-info/20 text-info",
+  PENDING_INSPECTION: "bg-warning/20 text-warning",
+  SHIPMENT_ARRIVED: "bg-info/20 text-info",
+  PENDING_APPROVAL: "bg-warning/20 text-warning",
+  SOLD: "bg-primary/20 text-primary",
+  DECLINED: "bg-destructive/20 text-destructive",
+  NEEDS_SPEC: "bg-warning/20 text-warning",
+  DAMAGED: "bg-destructive/20 text-destructive",
+  // Order lifecycle (OrderStatus enum)
+  CANCELLED: "bg-destructive/20 text-destructive",
 };
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {

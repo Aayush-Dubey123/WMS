@@ -168,6 +168,11 @@ async def seed_demo_users() -> None:
         db = MongoDatabase()
         now = datetime.now(timezone("UTC")).strftime("%Y-%m-%d %H:%M:%S.%f")
 
+        # Demo MANAGER/STAFF accounts must be scoped to a real warehouse for
+        # role-based filtering (orders/tickets/inventory) to return any data.
+        existing_warehouse = await db.warehouses.find_one({})
+        demo_warehouse_id = str(existing_warehouse["_id"]) if existing_warehouse else None
+
         demo_users = [
             {
                 "email": "owner@whitfield.com",
@@ -186,9 +191,9 @@ async def seed_demo_users() -> None:
                 "full_name": "Warehouse Manager",
                 "hashed_password": hash_password("ManagerPass123!"),
                 "role": "MANAGER",
-                "warehouse_id": None,
+                "warehouse_id": demo_warehouse_id,
                 "experience_tier": "EXPERIENCED",
-                "function_roles": ["operations", "approvals"],
+                "function_roles": [],
                 "status": "ACTIVE",
                 "created_at": now,
                 "updated_at": now,
@@ -198,9 +203,9 @@ async def seed_demo_users() -> None:
                 "full_name": "Warehouse Staff",
                 "hashed_password": hash_password("StaffPass123!"),
                 "role": "STAFF",
-                "warehouse_id": None,
+                "warehouse_id": demo_warehouse_id,
                 "experience_tier": "ROOKIE",
-                "function_roles": ["receiving", "packing"],
+                "function_roles": ["RECEIVING", "PACKING"],
                 "status": "ACTIVE",
                 "created_at": now,
                 "updated_at": now,

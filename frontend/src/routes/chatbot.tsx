@@ -142,7 +142,7 @@ function ChatbotContent() {
     <AppShell crumbs={[{ label: "Dashboard", to: "/" }, { label: "AI Assistant" }]} title="Warehouse AI Assistant">
       <div className="mx-auto max-w-2xl">
         {/* Chat Container */}
-        <div className="flex h-[600px] flex-col rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm shadow-xl overflow-hidden">
+        <div className="flex h-[600px] flex-col rounded-xl border border-border bg-card shadow-e2 overflow-hidden">
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto space-y-4 p-6">
             {messages.map((msg, idx) => (
@@ -153,8 +153,8 @@ function ChatbotContent() {
                 <div
                   className={`max-w-xs rounded-lg px-4 py-2.5 ${
                     msg.type === "user"
-                      ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white"
-                      : "bg-slate-700/50 text-slate-100 border border-slate-600/50"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground border border-border"
                   }`}
                 >
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -166,8 +166,8 @@ function ChatbotContent() {
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-slate-700/50 text-slate-100 rounded-lg px-4 py-2.5 border border-slate-600/50">
-                  <Loader2 className="size-5 animate-spin text-cyan-400" />
+                <div className="bg-secondary text-secondary-foreground rounded-lg px-4 py-2.5 border border-border">
+                  <Loader2 className="size-5 animate-spin text-primary" />
                 </div>
               </div>
             )}
@@ -175,7 +175,7 @@ function ChatbotContent() {
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-slate-700/50 bg-slate-900/50 p-4">
+          <div className="border-t border-border bg-surface-hover p-4">
             <form onSubmit={handleSendMessage} className="flex gap-3">
               <Input
                 type="text"
@@ -183,12 +183,12 @@ function ChatbotContent() {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 disabled={isLoading}
-                className="flex-1 bg-slate-700/30 border-slate-600/30 text-white placeholder:text-slate-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
+                className="flex-1 bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20"
               />
               <Button
                 type="submit"
                 disabled={isLoading || !inputValue.trim()}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white disabled:opacity-50"
+                className="bg-primary hover:brightness-110 text-primary-foreground disabled:opacity-50"
               >
                 {isLoading ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -201,26 +201,26 @@ function ChatbotContent() {
         </div>
 
         {/* Info Box */}
-        <div className="mt-6 rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
+        <div className="mt-6 rounded-lg border border-info/25 bg-info/5 p-4">
           <div className="flex gap-3">
-            <MessageCircle className="size-5 text-blue-400 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-slate-300">
-              <p className="font-semibold text-blue-300 mb-1">✨ Assistant Capabilities:</p>
+            <MessageCircle className="size-5 text-info flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-foreground">
+              <p className="font-semibold text-info mb-1">Assistant Capabilities:</p>
               <ul className="space-y-1 text-xs">
-                <li>• <span className="text-slate-400">Search orders by ID, customer, or status</span></li>
-                <li>• <span className="text-slate-400">Check inventory by barcode or location</span></li>
-                <li>• <span className="text-slate-400">View pending approvals (Manager/Owner)</span></li>
-                <li>• <span className="text-slate-400">Search audit logs (Owner only)</span></li>
-                <li>• <span className="text-slate-400">Get SOP guidance for receiving, packing, shipping</span></li>
+                <li>• <span className="text-muted-foreground">Search orders by ID, customer, or status</span></li>
+                <li>• <span className="text-muted-foreground">Check inventory by barcode or location</span></li>
+                <li>• <span className="text-muted-foreground">View pending approvals (Manager/Owner)</span></li>
+                <li>• <span className="text-muted-foreground">Search audit logs (Owner only)</span></li>
+                <li>• <span className="text-muted-foreground">Get SOP guidance for receiving, packing, shipping</span></li>
               </ul>
             </div>
           </div>
         </div>
 
         {/* User Info */}
-        <div className="mt-6 text-xs text-slate-400">
-          <p>Role: <span className="text-slate-300 font-semibold capitalize">{user?.role}</span></p>
-          <p>Scope: <span className="text-slate-300">{user?.warehouse_id ? `Warehouse ${user.warehouse_id}` : 'Global'}</span></p>
+        <div className="mt-6 text-xs text-muted-foreground">
+          <p>Role: <span className="text-foreground font-semibold capitalize">{user?.role}</span></p>
+          <p>Scope: <span className="text-foreground">{user?.warehouse_id ? `Warehouse ${user.warehouse_id}` : 'Global'}</span></p>
         </div>
       </div>
     </AppShell>

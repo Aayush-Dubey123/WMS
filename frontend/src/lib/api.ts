@@ -239,6 +239,7 @@ export const ticketsAPI = {
   ) =>
     apiCall(`/tickets/${ticketId}/items`, {
       method: "POST",
+      headers: { "Idempotency-Key": crypto.randomUUID() },
       body: JSON.stringify(data),
     }),
 
@@ -272,18 +273,20 @@ export const arrivalsAPI = {
 // ============================================================================
 
 export const voiceAPI = {
-  transcribe: (audioFile: File | string) => {
+  transcribe: (audioFile: File) => {
     const formData = new FormData();
-    if (typeof audioFile === "string") {
-      formData.append("audio_file", audioFile);
-    } else {
-      formData.append("audio_file", audioFile);
-    }
+    formData.append("file", audioFile);
     return fetch(`${API_BASE}/voice/transcribe`, {
       method: "POST",
       headers: { Authorization: `Bearer ${tokenManager.getAccessToken()}` },
       body: formData,
-    }).then((r) => r.json());
+    }).then(async (r) => {
+      if (!r.ok) {
+        const error = await r.json().catch(() => ({}));
+        throw new Error(error.detail || `HTTP ${r.status}`);
+      }
+      return r.json();
+    });
   },
 
   parse: (ticketId: string, transcript: string) =>

@@ -164,35 +164,37 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="fixed inset-x-0 top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-card px-4">
+      <header className="fixed inset-x-0 top-0 z-40 flex h-16 items-center gap-3 border-b border-border bg-card px-4 lg:px-6">
         <button
           aria-label="Toggle navigation"
           onClick={() => setOpen((v) => !v)}
-          className="grid size-10 place-items-center rounded-md hover:bg-surface-hover lg:hidden"
+          className="grid size-10 shrink-0 place-items-center rounded-md hover:bg-surface-hover lg:hidden"
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
 
-        <Link to="/" className="flex items-center gap-3 lg:w-[240px]">
-          <div className="grid size-8 place-items-center rounded-md bg-primary text-primary-foreground">
+        <Link to="/" className="flex shrink-0 items-center gap-3 lg:w-60">
+          <div className="grid size-8 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
             <ShieldCheck className="size-[18px]" />
           </div>
           <span className="hidden text-sm font-semibold sm:block">Whitfield WMS</span>
         </Link>
 
-        <form onSubmit={handleSearch} className="relative mx-auto hidden w-80 md:block">
-          <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            placeholder="Search orders, tickets... (e.g. ORD-123 or RNO-001)"
-            className="h-10 w-full rounded-lg border border-border bg-surface-hover text-sm text-foreground transition-all duration-150 outline-none placeholder:text-muted-foreground py-2 pl-10 pr-3 hover:bg-input focus:border-primary focus:ring-[2px] focus:ring-primary/20 focus:bg-background"
-          />
-        </form>
+        <div className="hidden flex-1 justify-center px-2 md:flex">
+          <form onSubmit={handleSearch} className="relative w-full max-w-2xl">
+            <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              placeholder="Search orders, tickets... (e.g. ORD-123 or RNO-001)"
+              className="h-10 w-full rounded-lg border border-border bg-surface-hover text-sm text-foreground transition-all duration-150 outline-none placeholder:text-muted-foreground py-2 pl-10 pr-3 hover:bg-input focus:border-primary focus:ring-[2px] focus:ring-primary/20 focus:bg-background"
+            />
+          </form>
+        </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <button
             aria-label="Notifications"
             className="relative grid size-10 place-items-center rounded-md hover:bg-surface-hover"
