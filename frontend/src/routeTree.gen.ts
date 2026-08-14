@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChatbotRouteImport } from './routes/chatbot'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TicketsRouteImport } from './routes/tickets'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as VoiceRouteImport } from './routes/voice'
@@ -23,6 +25,16 @@ import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatbotRoute = ChatbotRouteImport.update({
@@ -74,8 +86,10 @@ const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/chatbot': typeof ChatbotRoute
+  '/help': typeof HelpRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
   '/tickets': typeof TicketsRoute
   '/users': typeof UsersRoute
   '/voice': typeof VoiceRoute
@@ -86,8 +100,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/chatbot': typeof ChatbotRoute
+  '/help': typeof HelpRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
   '/tickets': typeof TicketsRoute
   '/users': typeof UsersRoute
   '/voice': typeof VoiceRoute
@@ -99,8 +115,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/chatbot': typeof ChatbotRoute
+  '/help': typeof HelpRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
   '/tickets': typeof TicketsRoute
   '/users': typeof UsersRoute
   '/voice': typeof VoiceRoute
@@ -113,8 +131,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/chatbot'
+    | '/help'
     | '/login'
     | '/reports'
+    | '/settings'
     | '/tickets'
     | '/users'
     | '/voice'
@@ -125,8 +145,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/chatbot'
+    | '/help'
     | '/login'
     | '/reports'
+    | '/settings'
     | '/tickets'
     | '/users'
     | '/voice'
@@ -137,8 +159,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/chatbot'
+    | '/help'
     | '/login'
     | '/reports'
+    | '/settings'
     | '/tickets'
     | '/users'
     | '/voice'
@@ -150,8 +174,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChatbotRoute: typeof ChatbotRoute
+  HelpRoute: typeof HelpRoute
   LoginRoute: typeof LoginRoute
   ReportsRoute: typeof ReportsRoute
+  SettingsRoute: typeof SettingsRoute
   TicketsRoute: typeof TicketsRoute
   UsersRoute: typeof UsersRoute
   VoiceRoute: typeof VoiceRoute
@@ -218,6 +244,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WarehousesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orders/': {
       id: '/orders/'
       path: '/orders'
@@ -238,8 +278,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChatbotRoute: ChatbotRoute,
+  HelpRoute: HelpRoute,
   LoginRoute: LoginRoute,
   ReportsRoute: ReportsRoute,
+  SettingsRoute: SettingsRoute,
   TicketsRoute: TicketsRoute,
   UsersRoute: UsersRoute,
   VoiceRoute: VoiceRoute,
