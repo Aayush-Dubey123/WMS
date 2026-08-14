@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Download, Filter, Loader2, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -57,6 +57,7 @@ function OrdersPageContent() {
   const [status, setStatus] = useState("ALL");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CreateOrderForm>({
     resolver: zodResolver(createOrderSchema),
@@ -92,6 +93,27 @@ function OrdersPageContent() {
         o.customer_name?.toLowerCase().includes(query.toLowerCase()))
   );
 
+  const handleExport = () => {
+    const rows = [
+      ["Order ID", "Customer", "Items", "Status", "Created"],
+      ...filteredOrders.map((o) => [
+        o.order_id ?? "",
+        o.customer_name ?? "",
+        String(o.items?.length ?? 0),
+        o.status ?? "",
+        o.created_at ?? "",
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const onSubmit = async (data: CreateOrderForm) => {
     setIsCreating(true);
     try {
@@ -118,10 +140,10 @@ function OrdersPageContent() {
       title="Orders & Fulfillment"
       actions={
         <>
-          <Btn variant="secondary">
+          <Btn variant="secondary" onClick={() => searchRef.current?.focus()}>
             <Filter className="size-4" /> Filter
           </Btn>
-          <Btn variant="secondary">
+          <Btn variant="secondary" onClick={handleExport}>
             <Download className="size-4" /> Export
           </Btn>
           <Btn onClick={() => setDialogOpen(true)}>
@@ -132,6 +154,7 @@ function OrdersPageContent() {
     >
       <div className="mb-6 space-y-4 rounded-xl border border-border bg-card p-4 shadow-e1">
         <SearchField
+          ref={searchRef}
           className="w-full"
           placeholder="Search order ID or customer..."
           value={query}
