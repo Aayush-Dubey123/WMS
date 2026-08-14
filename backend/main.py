@@ -9,6 +9,8 @@ Run with:
 The import here is intentionally minimal — all setup happens inside api.py.
 main.py is only the launcher.
 """
+from dotenv import load_dotenv
+load_dotenv()   # must run before chatbot_controller is imported
 
 import uvicorn
 

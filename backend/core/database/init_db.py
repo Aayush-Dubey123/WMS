@@ -5,10 +5,14 @@ Creates required MongoDB collections and sets up unique and compound indexes.
 Ensures idempotency when executed on startup or migration drills.
 """
 
+from datetime import datetime
 from pymongo import ASCENDING
+from pymongo.errors import DuplicateKeyError
 
+from commons.auth import hash_password
 from core import logger
 from core.database.database import MongoDatabase
+from core.models.user_model import UserRole, UserStatus, ExperienceTier
 
 logging = logger(__name__)
 
@@ -125,10 +129,100 @@ async def init_db() -> None:
         )
         logging.info("Index created: idempotency_keys.key (unique)")
 
+        # Collection: chat_conversations
+        # Unique index on conversation_id
+        await db.chat_conversations.create_index(
+            [("conversation_id", ASCENDING)],
+            unique=True,
+            name="idx_chat_conversation_id_unique",
+        )
+        logging.info("Index created: chat_conversations.conversation_id (unique)")
+
+        # Compound index on user_id + updated_at for listing by recency
+        await db.chat_conversations.create_index(
+            [("user_id", ASCENDING), ("updated_at", ASCENDING)],
+            name="idx_chat_user_updated",
+        )
+        logging.info("Index created: chat_conversations.user_id + updated_at")
+
         logging.info("Database initialization and index creation completed successfully")
+
+        # Seed demo users if they don't exist
+        await seed_demo_users()
     except Exception as error:
         logging.error(f"Error in init_db function: {error}")
         raise
+
+
+async def seed_demo_users() -> None:
+    """
+    Create demo users (OWNER, MANAGER, STAFF) if they don't exist.
+
+    Runs on every startup but only inserts if email doesn't already exist.
+    Ensures frontend demo login buttons always work.
+    """
+    try:
+        from pytz import timezone
+
+        logging.info("Seeding demo users...")
+        db = MongoDatabase()
+        now = datetime.now(timezone("UTC")).strftime("%Y-%m-%d %H:%M:%S.%f")
+
+        demo_users = [
+            {
+                "email": "owner@whitfield.com",
+                "full_name": "System Owner",
+                "hashed_password": hash_password("OwnerPass123!"),
+                "role": "OWNER",
+                "warehouse_id": None,
+                "experience_tier": None,
+                "function_roles": [],
+                "status": "ACTIVE",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "email": "manager@whitfield.com",
+                "full_name": "Warehouse Manager",
+                "hashed_password": hash_password("ManagerPass123!"),
+                "role": "MANAGER",
+                "warehouse_id": None,
+                "experience_tier": "EXPERIENCED",
+                "function_roles": ["operations", "approvals"],
+                "status": "ACTIVE",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "email": "staff@whitfield.com",
+                "full_name": "Warehouse Staff",
+                "hashed_password": hash_password("StaffPass123!"),
+                "role": "STAFF",
+                "warehouse_id": None,
+                "experience_tier": "ROOKIE",
+                "function_roles": ["receiving", "packing"],
+                "status": "ACTIVE",
+                "created_at": now,
+                "updated_at": now,
+            },
+        ]
+
+        for user in demo_users:
+            try:
+                existing = await db.users.find_one({"email": user["email"]})
+                if not existing:
+                    result = await db.users.insert_one(user)
+                    logging.info(f"Created {user['role']} user: {user['email']}")
+                else:
+                    logging.info(f"User already exists: {user['role']} - {user['email']}")
+            except DuplicateKeyError:
+                logging.info(f"User already exists: {user['role']} - {user['email']}")
+            except Exception as e:
+                logging.error(f"Error seeding {user['role']} user: {e}")
+
+        logging.info("Demo user seeding completed")
+    except Exception as error:
+        logging.error(f"Error in seed_demo_users: {error}")
 
 
 if __name__ == "__main__":

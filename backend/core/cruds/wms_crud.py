@@ -724,3 +724,72 @@ class CRUDVoiceDraft:
         except Exception as error:
             logging.error(f"Error in CRUDVoiceDraft.update: {error}")
             raise
+
+
+# ====== CHAT CRUD ======
+
+
+class CRUDChat:
+    """Database persistence for chatbot conversations."""
+
+    async def get_conversation(self, conversation_id: str) -> dict | None:
+        """Retrieve conversation by ID."""
+        try:
+            logging.info(f"Executing CRUDChat.get_conversation: {conversation_id}")
+            db = MongoDatabase()
+            result = await db.chat_conversations.find_one({"conversation_id": conversation_id})
+            return result if result else None
+        except Exception as error:
+            logging.error(f"Error in CRUDChat.get_conversation: {error}")
+            raise
+
+    async def append_messages(
+        self,
+        conversation_id: str,
+        messages: list[dict],
+        tokens_delta: int = 0,
+    ) -> dict | None:
+        """Append messages to conversation and update token count."""
+        try:
+            logging.info(f"Executing CRUDChat.append_messages: {conversation_id}")
+            db = MongoDatabase()
+            from datetime import datetime, timezone
+
+            now = datetime.now(timezone.utc).isoformat()
+            result = await db.chat_conversations.find_one_and_update(
+                {"conversation_id": conversation_id},
+                {
+                    "$push": {"messages": {"$each": messages}},
+                    "$inc": {"total_tokens": tokens_delta},
+                    "$set": {"updated_at": now},
+                },
+                upsert=True,
+                return_document=True,
+            )
+            return result if result else None
+        except Exception as error:
+            logging.error(f"Error in CRUDChat.append_messages: {error}")
+            raise
+
+    async def list_user_conversations(
+        self,
+        user_id: str,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> tuple[list[dict], int]:
+        """List conversations for a user, sorted by recency."""
+        try:
+            logging.info(f"Executing CRUDChat.list_user_conversations: {user_id}")
+            db = MongoDatabase()
+            total = await db.chat_conversations.count_documents({"user_id": user_id})
+            results = (
+                await db.chat_conversations.find({"user_id": user_id})
+                .sort("updated_at", -1)
+                .skip(skip)
+                .limit(limit)
+                .to_list(length=limit)
+            )
+            return results or [], total
+        except Exception as error:
+            logging.error(f"Error in CRUDChat.list_user_conversations: {error}")
+            raise

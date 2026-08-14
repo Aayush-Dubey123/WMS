@@ -1,28 +1,35 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Download, Filter, MoreHorizontal, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Download, Filter, Loader2, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { AppShell } from "@/components/wms/app-shell";
 import { StatusBadge } from "@/components/wms/status-badge";
+import { Btn, SearchField, Select, TableShell, Td, Th, Tr } from "@/components/wms/ui-bits";
+import { ProtectedRoute } from "@/lib/protected-route";
+import { ordersAPI, warehousesAPI } from "@/lib/api";
 import {
-  Btn,
-  Field,
-  Pager,
-  SearchField,
-  Select,
-  TableShell,
-  Td,
-  Th,
-  Tr,
-} from "@/components/wms/ui-bits";
-import { Checkbox } from "@/components/ui/checkbox";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { orders } from "@/lib/wms-data";
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/orders/")({
   head: () => ({
@@ -30,42 +37,85 @@ export const Route = createFileRoute("/orders/")({
       { title: "Orders & Fulfillment — Whitfield WMS" },
       {
         name: "description",
-        content:
-          "Search, filter and fulfill customer orders: reserve stock, pack, generate labels and ship from any warehouse.",
-      },
-      { property: "og:title", content: "Orders & Fulfillment — Whitfield WMS" },
-      {
-        property: "og:description",
-        content: "Reserve, pack, label and ship customer orders across warehouses.",
+        content: "Manage customer orders: create, reserve stock, pack, label and ship.",
       },
     ],
   }),
-  component: OrdersPage,
+  component: OrdersPageWrapper,
 });
 
-function OrdersPage() {
+const createOrderSchema = z.object({
+  order_id: z.string().min(1, "Order ID is required"),
+  customer_name: z.string().min(1, "Customer name is required"),
+  warehouse_id: z.string().min(1, "Warehouse is required"),
+});
+
+type CreateOrderForm = z.infer<typeof createOrderSchema>;
+
+function OrdersPageContent() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
-  const [selected, setSelected] = useState<string[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
-  const rows = useMemo(
-    () =>
-      orders.filter(
-        (o) =>
-          (status === "ALL" || o.status === status) &&
-          (o.id.toLowerCase().includes(query.toLowerCase()) ||
-            o.customer.toLowerCase().includes(query.toLowerCase())),
-      ),
-    [query, status],
+  const form = useForm<CreateOrderForm>({
+    resolver: zodResolver(createOrderSchema),
+    defaultValues: {
+      order_id: "",
+      customer_name: "",
+      warehouse_id: "",
+    },
+  });
+
+  // Fetch orders
+  const { data: ordersData, isLoading, refetch } = useQuery({
+    queryKey: ["orders", status],
+    queryFn: () => ordersAPI.getAll(0, 100, status !== "ALL" ? status : undefined),
+    staleTime: 30000,
+  });
+
+  // Fetch warehouses for dropdown
+  const { data: warehousesData = [] } = useQuery({
+    queryKey: ["warehouses"],
+    queryFn: () => warehousesAPI.getAll(0, 100),
+    staleTime: 60000,
+  });
+
+  const warehouses = Array.isArray(warehousesData) ? warehousesData : warehousesData?.warehouses || [];
+
+  const orders = Array.isArray(ordersData) ? ordersData : ordersData?.orders || [];
+
+  const filteredOrders = orders.filter(
+    (o) =>
+      (status === "ALL" || o.status === status) &&
+      (o.order_id?.toLowerCase().includes(query.toLowerCase()) ||
+        o.customer_name?.toLowerCase().includes(query.toLowerCase()))
   );
 
-  const toggle = (id: string) =>
-    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  const onSubmit = async (data: CreateOrderForm) => {
+    setIsCreating(true);
+    try {
+      await ordersAPI.create({
+        order_id: data.order_id,
+        customer_name: data.customer_name,
+        warehouse_id: data.warehouse_id,
+        items: [],
+      });
+      toast.success("Order created successfully!");
+      form.reset();
+      setDialogOpen(false);
+      refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create order");
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   return (
     <AppShell
       crumbs={[{ label: "Dashboard", to: "/" }, { label: "Orders" }]}
-      title="Orders"
+      title="Orders & Fulfillment"
       actions={
         <>
           <Btn variant="secondary">
@@ -74,120 +124,185 @@ function OrdersPage() {
           <Btn variant="secondary">
             <Download className="size-4" /> Export
           </Btn>
-          <Btn>
+          <Btn onClick={() => setDialogOpen(true)}>
             <Plus className="size-4" /> Create Order
           </Btn>
         </>
       }
     >
-      <div className="sticky top-16 z-20 mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-e1">
+      <div className="mb-6 space-y-4 rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm p-4 shadow-sm">
         <SearchField
-          className="w-full sm:w-[280px]"
+          className="w-full"
           placeholder="Search order ID or customer..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="ALL">All statuses</option>
-          {["PENDING", "RESERVED", "PACKED", "SHIPPED", "ERROR"].map((s) => (
-            <option key={s} value={s}>
+        <div className="flex flex-wrap gap-2">
+          {["ALL", "PENDING", "RESERVED", "PACKED", "SHIPPED"].map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatus(s)}
+              className={
+                "rounded-full px-4 py-1.5 text-xs font-bold transition-all " +
+                (status === s
+                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/20"
+                  : "border border-slate-600/50 text-slate-300 hover:bg-slate-700/30 hover:border-slate-500")
+              }
+            >
               {s}
-            </option>
+            </button>
           ))}
-        </Select>
-        <Select defaultValue="ALL">
-          <option value="ALL">All warehouses</option>
-          <option>WHT-01 · Whitfield North</option>
-          <option>WHT-02 · Dalton Yard</option>
-          <option>WHT-03 · Redmoor</option>
-        </Select>
-        <Field type="date" className="w-[160px]" />
-        <Field type="date" className="w-[160px]" />
-        <button
-          onClick={() => {
-            setQuery("");
-            setStatus("ALL");
-          }}
-          className="text-[12px] font-semibold text-primary hover:underline"
-        >
-          Clear all
-        </button>
-        {selected.length > 0 && (
-          <Btn variant="danger" className="ml-auto">
-            Delete {selected.length} selected
-          </Btn>
-        )}
+        </div>
       </div>
 
-      <div className="rounded-xl">
+      {isLoading ? (
+        <div className="py-12 text-center">
+          <Loader2 className="mx-auto size-8 animate-spin text-primary" />
+          <p className="mt-2 text-sm text-muted-foreground">Loading orders...</p>
+        </div>
+      ) : (
         <TableShell>
           <thead>
             <tr>
-              <Th className="w-10" />
               <Th>Order ID</Th>
               <Th>Customer</Th>
-              <Th>Warehouse</Th>
-              <Th className="text-right">Items</Th>
+              <Th>Items</Th>
               <Th>Status</Th>
               <Th>Created</Th>
-              <Th className="w-[60px]" />
+              <Th>Actions</Th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((o) => (
-              <Tr key={o.id} className={selected.includes(o.id) ? "border-l-primary bg-surface-hover" : ""}>
-                <Td>
-                  <Checkbox
-                    checked={selected.includes(o.id)}
-                    onCheckedChange={() => toggle(o.id)}
-                    aria-label={`Select ${o.id}`}
-                  />
-                </Td>
-                <Td>
-                  <Link
-                    to="/orders/$orderId"
-                    params={{ orderId: o.id }}
-                    className="font-mono text-[13px] text-primary hover:underline"
-                  >
-                    {o.id}
-                  </Link>
-                </Td>
-                <Td className="font-medium">{o.customer}</Td>
-                <Td className="text-[12px] text-muted-foreground">{o.warehouse}</Td>
-                <Td className="text-right text-[12px] text-muted-foreground">{o.items.length}</Td>
-                <Td>
-                  <StatusBadge status={o.status} />
-                </Td>
-                <Td className="text-[12px] text-muted-foreground">{o.created}</Td>
-                <Td>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      aria-label="Row actions"
-                      className="grid size-8 place-items-center rounded-md hover:bg-border"
+            {filteredOrders.length > 0 ? (
+              filteredOrders.map((order) => (
+                <Tr key={order.id}>
+                  <Td className="font-mono text-sm font-semibold">{order.order_id}</Td>
+                  <Td className="text-sm">{order.customer_name}</Td>
+                  <Td className="text-sm">{order.items?.length || 0}</Td>
+                  <Td>
+                    <StatusBadge status={order.status} />
+                  </Td>
+                  <Td className="text-xs text-muted-foreground">{order.created_at}</Td>
+                  <Td>
+                    <Link
+                      to={`/orders/${order.id}`}
+                      className="text-xs font-semibold text-primary hover:underline"
                     >
-                      <MoreHorizontal className="size-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="shadow-e3">
-                      <DropdownMenuItem asChild>
-                        <Link to="/orders/$orderId" params={{ orderId: o.id }}>
-                          View
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive focus:text-destructive">
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      View
+                    </Link>
+                  </Td>
+                </Tr>
+              ))
+            ) : (
+              <Tr>
+                <Td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  No orders found
                 </Td>
               </Tr>
-            ))}
+            )}
           </tbody>
         </TableShell>
-        <div className="rounded-b-xl border-x border-b border-border bg-card">
-          <Pager total={rows.length} />
-        </div>
-      </div>
+      )}
+
+      {/* Create Order Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader className="border-b border-slate-700/50 pb-4">
+            <DialogTitle className="text-lg font-bold">Create New Order</DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">Fill in the details to create a new order for fulfillment</DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+              <FormField
+                control={form.control}
+                name="order_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Order ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="ORD-2024-001"
+                        {...field}
+                        disabled={isCreating}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="customer_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="John Doe"
+                        {...field}
+                        disabled={isCreating}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="warehouse_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Warehouse</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        disabled={isCreating || warehouses.length === 0}
+                        className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="">
+                          {warehouses.length === 0 ? "No warehouses available" : "Select a warehouse..."}
+                        </option>
+                        {warehouses.map((wh: any) => (
+                          <option key={wh.id} value={wh.id}>
+                            {wh.code || wh.id} {wh.name ? `- ${wh.name}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                  disabled={isCreating}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isCreating}>
+                  {isCreating && <Loader2 className="mr-2 size-4 animate-spin" />}
+                  Create Order
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </AppShell>
+  );
+}
+
+function OrdersPageWrapper() {
+  return (
+    <ProtectedRoute requiredRoles={["OWNER", "MANAGER", "STAFF"]}>
+      <OrdersPageContent />
+    </ProtectedRoute>
   );
 }

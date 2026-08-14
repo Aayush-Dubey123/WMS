@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Bell,
   Boxes,
@@ -6,19 +6,23 @@ import {
   ClipboardList,
   LayoutDashboard,
   LifeBuoy,
+  LogOut,
   Menu,
+  MessageCircle,
   Mic,
   PackageSearch,
   Search,
   Settings,
   ShieldCheck,
+  Sparkles,
   Users,
   Warehouse,
   X,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, useRef } from "react";
 
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,18 +32,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const nav = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/orders", label: "Orders & Fulfillment", icon: PackageSearch },
-  { to: "/tickets", label: "Tickets & Arrivals", icon: ClipboardList },
-  { to: "/voice", label: "Voice Pipeline", icon: Mic },
-  { to: "/reports", label: "Reports", icon: Boxes },
-  { to: "/users", label: "User Management", icon: Users },
-  { to: "/warehouses", label: "Warehouses", icon: Warehouse },
+// Role-based navigation configuration
+const ALL_NAV = [
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["OWNER", "MANAGER", "STAFF"] },
+  { to: "/orders", label: "Orders & Fulfillment", icon: PackageSearch, roles: ["OWNER", "MANAGER", "STAFF"] },
+  { to: "/tickets", label: "Tickets & Arrivals", icon: ClipboardList, roles: ["OWNER", "MANAGER", "STAFF"] },
+  { to: "/voice", label: "Voice Pipeline", icon: Mic, roles: ["OWNER", "MANAGER", "STAFF"] },
+  { to: "/chatbot", label: "AI Assistant", icon: Sparkles, roles: ["OWNER", "MANAGER", "STAFF"] },
+  { to: "/reports", label: "Reports", icon: Boxes, roles: ["OWNER", "MANAGER"] },
+  { to: "/users", label: "User Management", icon: Users, roles: ["OWNER", "MANAGER"] },
+  { to: "/warehouses", label: "Warehouses", icon: Warehouse, roles: ["OWNER"] },
 ] as const;
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { user, hasRole } = useAuth();
+
+  // Filter navigation items based on user role
+  const visibleNav = ALL_NAV.filter((item) => {
+    if (!user) return false;
+    return item.roles.includes(user.role);
+  });
 
   return (
     <div className="flex h-full flex-col">
@@ -56,7 +69,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="flex-1 overflow-y-auto p-3">
         <p className="label-xs mb-2 px-3 text-muted-foreground uppercase">Workspace</p>
         <ul className="space-y-[2px]">
-          {nav.map((item) => {
+          {visibleNav.map((item) => {
             const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
             return (
               <li key={item.to}>
@@ -112,6 +125,42 @@ export function AppShell({
   actions?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const { user, logout, isLoading } = useAuth();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchValue.trim()) return;
+
+    const query = searchValue.trim();
+    if (query.match(/^[A-Z]{2,}-/)) {
+      navigate({ to: "/tickets", search: { q: query } });
+    } else {
+      navigate({ to: "/orders", search: { q: query } });
+    }
+    setSearchValue("");
+  };
+
+  // Get user initials for avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const userInitials = user ? getInitials(user.full_name) : "U";
+  const userName = user?.full_name || "User";
+  const userEmail = user?.email || "";
+  const userRole = user?.role || "UNKNOWN";
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -131,13 +180,17 @@ export function AppShell({
           <span className="hidden text-sm font-semibold sm:block">Whitfield WMS</span>
         </Link>
 
-        <div className="relative mx-auto hidden w-[320px] md:block">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <form onSubmit={handleSearch} className="relative mx-auto hidden w-80 md:block">
+          <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
-            placeholder="Search orders, tickets..."
-            className="h-10 w-full rounded-md border border-border bg-input py-[10px] pr-3 pl-9 text-sm text-foreground transition-all duration-150 outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10"
+            ref={searchInputRef}
+            type="text"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder="Search orders, tickets... (e.g. ORD-123 or RNO-001)"
+            className="h-10 w-full rounded-lg border border-border bg-surface-hover text-sm text-foreground transition-all duration-150 outline-none placeholder:text-muted-foreground py-2 pl-10 pr-3 hover:bg-input focus:border-primary focus:ring-[2px] focus:ring-primary/20 focus:bg-background"
           />
-        </div>
+        </form>
 
         <div className="ml-auto flex items-center gap-2">
           <button
@@ -150,18 +203,22 @@ export function AppShell({
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 rounded-md p-1 hover:bg-surface-hover">
               <span className="grid size-8 place-items-center rounded-full bg-primary/20 text-[12px] font-semibold text-primary">
-                SW
+                {userInitials}
               </span>
-              <span className="hidden text-left text-sm leading-tight sm:block">
-                Sam Whitfield
-                <span className="block text-[11px] text-muted-foreground">Owner</span>
-              </span>
+              {!isLoading && (
+                <span className="hidden text-left text-sm leading-tight sm:block">
+                  {userName}
+                  <span className="block text-[11px] text-muted-foreground capitalize">
+                    {userRole.toLowerCase()}
+                  </span>
+                </span>
+              )}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 shadow-e3">
               <DropdownMenuLabel className="leading-tight">
-                Sam Whitfield
+                {userName}
                 <span className="block text-[12px] font-normal text-muted-foreground">
-                  sam@whitfieldwms.com
+                  {userEmail}
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -169,7 +226,11 @@ export function AppShell({
               <DropdownMenuItem>Activity</DropdownMenuItem>
               <DropdownMenuItem>Help</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive focus:text-destructive">
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-destructive focus:text-destructive"
+              >
+                <LogOut className="mr-2 size-4" />
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

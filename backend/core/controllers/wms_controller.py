@@ -461,6 +461,90 @@ class TicketController:
         self._audit_service = get_audit_service()
         self._idempotency_service = get_idempotency_service()
 
+    async def get_ticket(self, id: str, current_user: dict) -> dict:
+        """
+        Retrieve a single ticket by ID with warehouse-scope enforcement.
+
+        Args:
+            id: Mongo _id or ticket_id string.
+            current_user: Authenticated user for role-based scoping.
+
+        Returns:
+            dict: Ticket payload.
+
+        Raises:
+            HTTPException 404: Ticket not found, or outside caller's warehouse scope.
+        """
+        try:
+            logging.info(f"Executing TicketController.get_ticket: {id}")
+            ticket = await self._ticket_crud.get_by_id(id=id)
+            if not ticket:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Ticket not found",
+                )
+
+            if current_user.get("role") in ["STAFF", "MANAGER"]:
+                user_warehouse_id = current_user.get("warehouse_id")
+                if user_warehouse_id and ticket.get("warehouse_id") != user_warehouse_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Ticket not found",
+                    )
+
+            return ticket
+        except HTTPException:
+            raise
+        except Exception as error:
+            logging.error(f"Error in TicketController.get_ticket: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal Server Error",
+            )
+
+    async def list_ticket_items(self, ticket_id: str, current_user: dict) -> dict:
+        """
+        List all scanned item units for a ticket, with warehouse-scope enforcement
+        on the parent ticket.
+
+        Args:
+            ticket_id: Ticket ID string.
+            current_user: Authenticated user for role-based scoping.
+
+        Returns:
+            dict with 'items' list and 'total' count.
+
+        Raises:
+            HTTPException 404: Ticket not found, or outside caller's warehouse scope.
+        """
+        try:
+            logging.info(f"Executing TicketController.list_ticket_items: {ticket_id}")
+            ticket = await self._ticket_crud.get_by_id(id=ticket_id)
+            if not ticket:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Ticket not found",
+                )
+
+            if current_user.get("role") in ["STAFF", "MANAGER"]:
+                user_warehouse_id = current_user.get("warehouse_id")
+                if user_warehouse_id and ticket.get("warehouse_id") != user_warehouse_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Ticket not found",
+                    )
+
+            items = await self._item_crud.get_items_by_ticket(ticket_id=ticket.get("ticket_id", ticket_id))
+            return {"items": items, "total": len(items)}
+        except HTTPException:
+            raise
+        except Exception as error:
+            logging.error(f"Error in TicketController.list_ticket_items: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal Server Error",
+            )
+
     async def log_item_scan(
         self,
         ticket_id: str,
@@ -751,6 +835,72 @@ class TicketController:
                 detail="Internal Server Error",
             )
 
+    async def list_tickets(
+        self,
+        skip: int = 0,
+        limit: int = 50,
+        status_filter: str | None = None,
+        facility: str | None = None,
+        seller: str | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        current_user: dict | None = None,
+    ) -> dict:
+        """
+        List tickets with pagination and role-based filtering.
+
+        Args:
+            skip: Number of records to skip.
+            limit: Max records per page.
+            status_filter: Filter by status (PENDING_APPROVAL/APPROVED/STORED).
+            facility: Filter by warehouse ID.
+            seller: Filter by seller/vendor.
+            start_date: ISO date for ticket start.
+            end_date: ISO date for ticket end.
+            current_user: Authenticated user for role-based filtering.
+
+        Returns:
+            dict with 'tickets' list and 'total' count.
+        """
+        try:
+            logging.info("Executing TicketController.list_tickets")
+            filter_doc = {}
+
+            if status_filter:
+                filter_doc["status"] = status_filter.upper()
+
+            if seller:
+                filter_doc["seller"] = seller
+
+            if facility:
+                filter_doc["warehouse_id"] = facility
+            elif current_user and current_user.get("role") in ["STAFF", "MANAGER"]:
+                filter_doc["warehouse_id"] = current_user.get("warehouse_id")
+
+            if start_date or end_date:
+                date_filter = {}
+                if start_date:
+                    date_filter["$gte"] = start_date
+                if end_date:
+                    date_filter["$lte"] = end_date
+                if date_filter:
+                    filter_doc["created_at"] = date_filter
+
+            tickets, total = await self._ticket_crud.list_tickets(
+                filter_query=filter_doc, skip=skip, limit=limit
+            )
+
+            return {
+                "tickets": [t.model_dump() if hasattr(t, "model_dump") else t for t in tickets],
+                "total": total,
+            }
+        except Exception as error:
+            logging.error(f"Error in TicketController.list_tickets: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal Server Error",
+            )
+
 
 class StorageController:
     """Controller managing warehouse storage bin locations."""
@@ -868,6 +1018,47 @@ class OrderController:
         self._item_crud = CRUDItem()
         self._wh_crud = CRUDWarehouse()
         self._audit_service = get_audit_service()
+
+    async def get_order(self, id: str, current_user: dict) -> dict:
+        """
+        Retrieve a single order by ID with warehouse-scope enforcement.
+
+        Args:
+            id: Mongo _id or order_id string.
+            current_user: Authenticated user for role-based scoping.
+
+        Returns:
+            dict: Order payload.
+
+        Raises:
+            HTTPException 404: Order not found, or outside caller's warehouse scope.
+        """
+        try:
+            logging.info(f"Executing OrderController.get_order: {id}")
+            order = await self._order_crud.get_by_id(id=id)
+            if not order:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Order not found",
+                )
+
+            if current_user.get("role") in ["STAFF", "MANAGER"]:
+                user_warehouse_id = current_user.get("warehouse_id")
+                if user_warehouse_id and order.get("warehouse_id") != user_warehouse_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Order not found",
+                    )
+
+            return order
+        except HTTPException:
+            raise
+        except Exception as error:
+            logging.error(f"Error in OrderController.get_order: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal Server Error",
+            )
 
     async def create_order(self, order_data: dict, current_user: dict) -> dict:
         """
@@ -1143,6 +1334,67 @@ class OrderController:
             raise
         except Exception as error:
             logging.error(f"Error in OrderController.ship_order: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal Server Error",
+            )
+
+    async def list_orders(
+        self,
+        skip: int = 0,
+        limit: int = 50,
+        status_filter: str | None = None,
+        facility: str | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        current_user: dict | None = None,
+    ) -> dict:
+        """
+        List orders with pagination and role-based filtering.
+
+        Args:
+            skip: Number of records to skip.
+            limit: Max records per page.
+            status_filter: Filter by status (PENDING/RESERVED/PACKED/SHIPPED).
+            facility: Filter by warehouse ID.
+            start_date: ISO date for order start.
+            end_date: ISO date for order end.
+            current_user: Authenticated user for role-based filtering.
+
+        Returns:
+            dict with 'orders' list and 'total' count.
+        """
+        try:
+            logging.info(f"Executing OrderController.list_orders")
+            filter_doc = {}
+
+            if status_filter:
+                filter_doc["status"] = status_filter.upper()
+
+            if facility:
+                filter_doc["warehouse_id"] = facility
+            elif current_user and current_user.get("role") in ["STAFF", "MANAGER"]:
+                filter_doc["warehouse_id"] = current_user.get("warehouse_id")
+
+            if start_date or end_date:
+                date_filter = {}
+                if start_date:
+                    date_filter["$gte"] = start_date
+                if end_date:
+                    date_filter["$lte"] = end_date
+                if date_filter:
+                    filter_doc["created_at"] = date_filter
+
+            orders, total = await self._order_crud.list_orders(
+                filter_query=filter_doc, skip=skip, limit=limit
+            )
+
+            return {
+                "orders": [o.model_dump() if hasattr(o, "model_dump") else o for o in orders],
+                "total": total,
+            }
+        except Exception as error:
+            logging.error(f"Error in OrderController.list_orders: {error}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal Server Error",

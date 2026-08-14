@@ -850,7 +850,7 @@ Exposes endpoints for manual order intake, atomic stock reservation, picklist ge
 packing, carrier shipping label generation, shipping, and reservation cancellation.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from commons.auth import get_current_user
 from core import logger
@@ -859,6 +859,7 @@ from core.apis.schemas.requests.wms_request import (
     OrderPackRequest,
 )
 from core.apis.schemas.responses.wms_response import (
+    OrderListResponse,
     OrderResponse,
     PicklistResponse,
     ShippingLabelResponse,
@@ -867,6 +868,80 @@ from core.controllers.wms_controller import OrderController
 
 order_router = APIRouter(prefix="/orders", tags=["Orders & Fulfillment"])
 logging = logger(__name__)
+
+
+@order_router.get(
+    "",
+    status_code=status.HTTP_200_OK,
+    response_model=OrderListResponse,
+)
+async def list_orders(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(50, ge=1, le=500, description="Max records per page"),
+    status_filter: str = Query(None, alias="status", description="Filter by status (PENDING/RESERVED/PACKED/SHIPPED)"),
+    facility: str = Query(None, alias="warehouse_id", description="Filter by warehouse ID"),
+    start_date: str = Query(None, description="ISO date (YYYY-MM-DD) for order start"),
+    end_date: str = Query(None, description="ISO date (YYYY-MM-DD) for order end"),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    List orders with pagination and role-based filtering.
+
+    STAFF: see only own warehouse orders.
+    MANAGER: see own warehouse orders.
+    OWNER: see all orders.
+    """
+    try:
+        logging.info(f"Calling GET /orders endpoint by {current_user.get('email')}")
+        response = await OrderController().list_orders(
+            skip=skip,
+            limit=limit,
+            status_filter=status_filter,
+            facility=facility,
+            start_date=start_date,
+            end_date=end_date,
+            current_user=current_user,
+        )
+        return OrderListResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /orders endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /orders endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error),
+        )
+
+
+@order_router.get(
+    "/{id}",
+    status_code=status.HTTP_200_OK,
+    response_model=OrderResponse,
+)
+async def get_order(
+    id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Retrieve a single order by ID (accepts Mongo _id or order_id string).
+
+    STAFF/MANAGER: 404 if order is outside their assigned warehouse.
+    OWNER: unrestricted.
+    """
+    try:
+        logging.info(f"Calling GET /orders/{id} endpoint by {current_user.get('email')}")
+        response = await OrderController().get_order(id=id, current_user=current_user)
+        return OrderResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /orders/{id} endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /orders/{id} endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error),
+        )
 
 
 @order_router.post(
@@ -1436,6 +1511,7 @@ from fastapi import (
     File,
     Header,
     HTTPException,
+    Query,
     UploadFile,
     status,
 )
@@ -1444,8 +1520,9 @@ from commons.auth import get_current_user
 from core import logger
 from core.apis.schemas.requests.wms_request import ItemLogRequest
 from core.apis.schemas.requests.wms_request import StoreTicketRequest
-from core.apis.schemas.responses.wms_response import ItemResponse
+from core.apis.schemas.responses.wms_response import ItemListResponse, ItemResponse
 from core.apis.schemas.responses.wms_response import (
+    TicketListResponse,
     TicketResponse,
 )
 from core.controllers.wms_controller import TicketController
@@ -1453,6 +1530,114 @@ from core.services.integration_service import get_storage_service
 
 ticket_router = APIRouter(tags=["Ticketing, Inspection & Storage"])
 logging = logger(__name__)
+
+
+@ticket_router.get(
+    "/tickets",
+    status_code=status.HTTP_200_OK,
+    response_model=TicketListResponse,
+)
+async def list_tickets(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(50, ge=1, le=500, description="Max records per page"),
+    status_filter: str = Query(None, alias="status", description="Filter by status (PENDING_APPROVAL/APPROVED/STORED)"),
+    facility: str = Query(None, alias="warehouse_id", description="Filter by warehouse ID"),
+    seller: str = Query(None, description="Filter by seller/vendor"),
+    start_date: str = Query(None, description="ISO date (YYYY-MM-DD) for ticket start"),
+    end_date: str = Query(None, description="ISO date (YYYY-MM-DD) for ticket end"),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    List tickets with pagination and role-based filtering.
+
+    STAFF: see only own warehouse tickets.
+    MANAGER: see own warehouse tickets.
+    OWNER: see all tickets.
+    """
+    try:
+        logging.info(f"Calling GET /tickets endpoint by {current_user.get('email')}")
+        response = await TicketController().list_tickets(
+            skip=skip,
+            limit=limit,
+            status_filter=status_filter,
+            facility=facility,
+            seller=seller,
+            start_date=start_date,
+            end_date=end_date,
+            current_user=current_user,
+        )
+        return TicketListResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /tickets endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /tickets endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error),
+        )
+
+
+@ticket_router.get(
+    "/tickets/{id}",
+    status_code=status.HTTP_200_OK,
+    response_model=TicketResponse,
+)
+async def get_ticket(
+    id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Retrieve a single ticket by ID.
+
+    STAFF/MANAGER: 404 if ticket is outside their assigned warehouse.
+    OWNER: unrestricted.
+    """
+    try:
+        logging.info(f"Calling GET /tickets/{id} endpoint by {current_user.get('email')}")
+        response = await TicketController().get_ticket(id=id, current_user=current_user)
+        return TicketResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /tickets/{id} endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /tickets/{id} endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error),
+        )
+
+
+@ticket_router.get(
+    "/tickets/{ticket_id}/items",
+    status_code=status.HTTP_200_OK,
+    response_model=ItemListResponse,
+)
+async def list_ticket_items(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    List all scanned item units under a ticket.
+
+    STAFF/MANAGER: 404 if the parent ticket is outside their assigned warehouse.
+    OWNER: unrestricted.
+    """
+    try:
+        logging.info(f"Calling GET /tickets/{ticket_id}/items endpoint by {current_user.get('email')}")
+        response = await TicketController().list_ticket_items(
+            ticket_id=ticket_id, current_user=current_user
+        )
+        return ItemListResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /tickets/{ticket_id}/items endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /tickets/{ticket_id}/items endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error),
+        )
 
 
 @ticket_router.post(

@@ -32,6 +32,7 @@ from core.apis.routes.wms_router import (
     vision_router,
     voice_router,
 )
+from core.apis.routes.chatbot_router import chatbot_router
 from core.config.settings import settings
 from core.database.database import close_mongo_connection, connect_to_mongo
 from core.database.init_db import init_db
@@ -128,6 +129,7 @@ app.include_router(voice_router)
 app.include_router(vision_router)
 app.include_router(query_router)
 app.include_router(api_key_router)
+app.include_router(chatbot_router)
 
 
 @app.get("/", tags=["Root"])
