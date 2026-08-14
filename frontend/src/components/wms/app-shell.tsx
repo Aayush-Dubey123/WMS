@@ -95,16 +95,28 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="border-t border-border p-3">
         <ul className="space-y-[2px]">
           {[
-            { label: "Settings", icon: Settings },
-            { label: "Help & Support", icon: LifeBuoy },
-          ].map((i) => (
-            <li key={i.label}>
-              <button className="flex h-9 w-full items-center gap-3 rounded-md px-3 text-sm text-sidebar-foreground transition-colors duration-150 hover:bg-surface-hover">
-                <i.icon className="size-[18px]" />
-                {i.label}
-              </button>
-            </li>
-          ))}
+            { label: "Settings", icon: Settings, to: "/settings" },
+            { label: "Help & Support", icon: LifeBuoy, to: "/help" },
+          ].map((i) => {
+            const active = pathname === i.to;
+            return (
+              <li key={i.label}>
+                <Link
+                  to={i.to}
+                  onClick={onNavigate}
+                  className={cn(
+                    "flex h-9 w-full items-center gap-3 rounded-md px-3 text-sm transition-colors duration-150",
+                    active
+                      ? "bg-surface-hover font-medium text-primary"
+                      : "text-sidebar-foreground hover:bg-surface-hover",
+                  )}
+                >
+                  <i.icon className="size-[18px]" />
+                  {i.label}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>
@@ -224,9 +236,15 @@ export function AppShell({
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Activity</DropdownMenuItem>
-              <DropdownMenuItem>Help</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/reports" })}>
+                Activity
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/help" })}>
+                Help
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}

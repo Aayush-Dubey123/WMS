@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Search, TrendingDown, TrendingUp } from "lucide-react";
+import { forwardRef } from "react";
 import type { ComponentProps, ElementType, ReactNode } from "react";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 
@@ -27,26 +28,30 @@ export function Btn({
   );
 }
 
-export function Field({ className, ...props }: ComponentProps<"input">) {
+export const Field = forwardRef<HTMLInputElement, ComponentProps<"input">>(function Field({ className, ...props }, ref) {
   return (
     <input
+      ref={ref}
       className={cn(
-        "h-10 w-full rounded-md border border-border bg-input px-3 py-[10px] text-sm text-foreground transition-all duration-150 outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10 disabled:opacity-50",
+        "h-10 w-full rounded-md border border-border bg-input px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10",
         className,
       )}
       {...props}
     />
   );
-}
+});
 
-export function SearchField({ className, ...props }: ComponentProps<"input">) {
-  return (
-    <div className={cn("relative", className)}>
-      <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-      <Field className="pl-9" placeholder="Search..." {...props} />
-    </div>
-  );
-}
+
+export const SearchField = forwardRef<HTMLInputElement, ComponentProps<"input">>(
+  function SearchField({ className, ...props }, ref) {
+    return (
+      <div className={cn("relative", className)}>
+        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Field ref={ref} className="pl-9" placeholder="Search..." {...props} />
+      </div>
+    );
+  },
+);
 
 export function Select({ className, ...props }: ComponentProps<"select">) {
   return (
