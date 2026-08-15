@@ -1060,6 +1060,39 @@ class OrderController:
                 detail="Internal Server Error",
             )
 
+    async def get_order_items(self, id: str, current_user: dict) -> dict:
+        """
+        Retrieve the physical item units reserved against an order, including
+        their live storage_location, so fulfillment staff can find stock without
+        leaving the order screen.
+
+        Items only carry an order_id once the order has been reserved, so a
+        PENDING order returns an empty list.
+
+        Args:
+            id: Mongo _id or order_id string.
+            current_user: Authenticated user for warehouse-scope enforcement.
+
+        Returns:
+            dict: {"items": [...], "total": int} payload.
+
+        Raises:
+            HTTPException 404: Order not found, or outside caller's warehouse scope.
+        """
+        try:
+            logging.info(f"Executing OrderController.get_order_items: {id}")
+            order = await self.get_order(id=id, current_user=current_user)
+            items = await self._item_crud.get_items_by_order(order_id=order["order_id"])
+            return {"items": items, "total": len(items)}
+        except HTTPException:
+            raise
+        except Exception as error:
+            logging.error(f"Error in OrderController.get_order_items: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal Server Error",
+            )
+
     async def create_order(self, order_data: dict, current_user: dict) -> dict:
         """
         Create a new manual intake customer order in PENDING status.
@@ -1877,6 +1910,7 @@ class VoiceController:
                 "parsed_data": parsed_res["parsed_data"],
                 "confidence_scores": parsed_res["confidence_scores"],
                 "status": DraftStatus.DRAFT.value,
+                "created_at": datetime.now(timezone("UTC")).strftime("%Y-%m-%d %H:%M:%S.%f"),
             }
 
             created_draft = await self._draft_crud.create(draft_payload)

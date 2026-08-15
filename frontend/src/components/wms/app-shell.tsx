@@ -189,7 +189,8 @@ export function AppShell({
           <div className="grid size-8 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
             <ShieldCheck className="size-[18px]" />
           </div>
-          <span className="hidden text-sm font-semibold sm:block">Whitfield WMS</span>
+          {/* Hidden at lg+ since the persistent sidebar already shows full branding there */}
+          <span className="hidden text-sm font-semibold sm:block lg:hidden">Whitfield WMS</span>
         </Link>
 
         <div className="hidden flex-1 justify-center px-2 md:flex">

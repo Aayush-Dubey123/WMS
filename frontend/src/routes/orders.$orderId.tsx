@@ -34,6 +34,8 @@ const steps = ["PENDING", "RESERVED", "PACKED", "SHIPPED"] as const;
 
 type OrderItem = { barcode: string; product_name: string; quantity: number };
 
+type UnitItem = { barcode: string; storage_location: string | null; status: string };
+
 type OrderData = {
   id: string;
   order_id: string;
@@ -70,6 +72,24 @@ function OrderDetailContent() {
     retry: false,
   });
 
+  const {
+    data: unitsData,
+    isFetching: unitsLoading,
+    refetch: refetchUnits,
+  } = useQuery<{ items: UnitItem[]; total: number }>({
+    queryKey: ["order-items", order?.id],
+    queryFn: () => ordersAPI.getItems(order!.id) as Promise<{ items: UnitItem[]; total: number }>,
+    enabled: !!order?.id,
+    refetchInterval: 15000,
+  });
+
+  const locationsByBarcode = (unitsData?.items ?? []).reduce<Record<string, string[]>>((acc, unit) => {
+    if (!unit.storage_location) return acc;
+    const list = acc[unit.barcode] ?? (acc[unit.barcode] = []);
+    if (!list.includes(unit.storage_location)) list.push(unit.storage_location);
+    return acc;
+  }, {});
+
   const currentStepIndex = order ? steps.indexOf(order.status as (typeof steps)[number]) : -1;
 
   const runAction = async (action: string, fn: () => Promise<unknown>, successMsg?: string) => {
@@ -78,6 +98,7 @@ function OrderDetailContent() {
       await fn();
       if (successMsg) toast.success(successMsg);
       await refetch();
+      await refetchUnits();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : `Failed to ${action} order`);
     } finally {
@@ -184,20 +205,33 @@ function OrderDetailContent() {
                 <Th>Barcode</Th>
                 <Th>Product</Th>
                 <Th className="text-right">Qty</Th>
+                <Th>Location</Th>
               </tr>
             </thead>
             <tbody>
               {order.items.length > 0 ? (
-                order.items.map((it, idx) => (
-                  <Tr key={`${it.barcode}-${idx}`}>
-                    <Td className="font-mono text-[12px] text-muted-foreground">{it.barcode}</Td>
-                    <Td className="font-medium">{it.product_name}</Td>
-                    <Td className="text-right">{it.quantity}</Td>
-                  </Tr>
-                ))
+                order.items.map((it, idx) => {
+                  const locations = locationsByBarcode[it.barcode] ?? [];
+                  return (
+                    <Tr key={`${it.barcode}-${idx}`}>
+                      <Td className="font-mono text-[12px] text-muted-foreground">{it.barcode}</Td>
+                      <Td className="font-medium">{it.product_name}</Td>
+                      <Td className="text-right">{it.quantity}</Td>
+                      <Td className="font-mono text-[12px]">
+                        {unitsLoading && !unitsData
+                          ? "…"
+                          : locations.length > 0
+                            ? locations.join(", ")
+                            : order.status === "PENDING"
+                              ? "Not reserved yet"
+                              : "—"}
+                      </Td>
+                    </Tr>
+                  );
+                })
               ) : (
                 <Tr>
-                  <Td colSpan={3} className="py-8 text-center text-muted-foreground">
+                  <Td colSpan={4} className="py-8 text-center text-muted-foreground">
                     No items on this order
                   </Td>
                 </Tr>
@@ -314,17 +348,25 @@ function OrderDetailContent() {
           </Panel>
 
           <Panel>
-            <h3>Items Reference</h3>
+            <h3>Item Locations</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Bin-level storage locations for these items are tracked on the inbound arrival tickets that
-              received them, not on the order itself.
+              {order.status === "PENDING"
+                ? "Reserve stock to pull each unit's live bin location into the table."
+                : (unitsData?.total ?? 0) > 0
+                  ? `${unitsData!.total} unit${unitsData!.total === 1 ? "" : "s"} reserved from stock — bin locations shown in the Items table.`
+                  : "No physical units are currently linked to this order."}
             </p>
-            <Link
-              to="/tickets"
-              className="mt-4 inline-block text-[12px] font-semibold text-primary hover:underline"
-            >
-              View inbound arrivals
-            </Link>
+            <div className="mt-4 flex items-center gap-3">
+              <Btn variant="secondary" disabled={unitsLoading} onClick={() => refetchUnits()}>
+                {unitsLoading && <Loader2 className="size-4 animate-spin" />} Refresh Locations
+              </Btn>
+              <Link
+                to="/tickets"
+                className="text-[12px] font-semibold text-primary hover:underline"
+              >
+                View inbound arrivals
+              </Link>
+            </div>
           </Panel>
         </div>
       </div>

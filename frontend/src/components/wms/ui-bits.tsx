@@ -13,14 +13,14 @@ export function Btn({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-md px-4 py-[10px] text-sm font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex h-9 items-center justify-center gap-2 rounded-md px-3.5 text-sm font-medium transition-colors duration-100 disabled:cursor-not-allowed disabled:opacity-50",
         variant === "primary" &&
-          "bg-primary text-primary-foreground hover:brightness-110 active:brightness-90",
+          "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80",
         variant === "secondary" &&
-          "border border-border bg-secondary text-foreground hover:bg-border",
+          "border border-border bg-card text-foreground hover:border-border-strong hover:bg-surface-hover",
         variant === "ghost" &&
-          "border border-primary bg-transparent text-primary hover:bg-primary/10 active:bg-primary/20",
-        variant === "danger" && "bg-destructive text-destructive-foreground hover:brightness-110",
+          "border border-primary/40 bg-transparent text-primary hover:border-primary hover:bg-primary/10",
+        variant === "danger" && "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         className,
       )}
       {...props}
@@ -33,7 +33,7 @@ export const Field = forwardRef<HTMLInputElement, ComponentProps<"input">>(funct
     <input
       ref={ref}
       className={cn(
-        "h-10 w-full rounded-md border border-border bg-input px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10",
+        "h-9 w-full rounded-md border border-border bg-input px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/10",
         className,
       )}
       {...props}
@@ -57,7 +57,7 @@ export function Select({ className, ...props }: ComponentProps<"select">) {
   return (
     <select
       className={cn(
-        "h-10 rounded-md border border-border bg-input px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10",
+        "h-9 rounded-md border border-border bg-input px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10",
         className,
       )}
       {...props}
@@ -155,7 +155,7 @@ export function Th({ className, ...props }: ComponentProps<"th">) {
   return (
     <th
       className={cn(
-        "label-xs border-b border-border bg-card px-4 py-3 whitespace-nowrap text-muted-foreground",
+        "label-xs border-b border-border bg-card px-4 py-2.5 whitespace-nowrap text-muted-foreground",
         className,
       )}
       {...props}
@@ -165,7 +165,7 @@ export function Th({ className, ...props }: ComponentProps<"th">) {
 
 export function Td({ className, ...props }: ComponentProps<"td">) {
   return (
-    <td className={cn("h-[52px] border-b border-border px-4 py-3 align-middle", className)} {...props} />
+    <td className={cn("h-11 border-b border-border px-4 py-2 align-middle", className)} {...props} />
   );
 }
 
@@ -173,7 +173,7 @@ export function Tr({ className, ...props }: ComponentProps<"tr">) {
   return (
     <tr
       className={cn(
-        "border-l-4 border-transparent transition-colors duration-150 hover:bg-surface-hover",
+        "border-l-2 border-transparent transition-colors duration-100 hover:bg-surface-hover",
         className,
       )}
       {...props}

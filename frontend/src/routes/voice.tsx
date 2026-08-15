@@ -33,7 +33,7 @@ type Draft = {
     height?: number;
     weight?: number;
     fragile?: boolean;
-    damage?: string;
+    damage?: { flag: boolean; note: string | null };
   };
   confidence_scores: Record<string, number>;
 };
@@ -194,7 +194,13 @@ function VoiceContent() {
               : "—",
           confidence: scores["width"],
         },
-        { field: "Damage", value: draft.parsed_data?.damage || "None reported", confidence: scores["damage"] },
+        {
+          field: "Damage",
+          value: draft.parsed_data?.damage?.flag
+            ? draft.parsed_data.damage.note || "Damage reported"
+            : "None reported",
+          confidence: scores["damage"],
+        },
       ]
     : [];
 
