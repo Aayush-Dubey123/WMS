@@ -7,7 +7,9 @@
  * Approvals, Storage, Orders, Reports, Audit, Query, Vision, Voice, Health
  */
 
-const API_BASE = "http://127.0.0.1:8000";
+// VITE_ variables are set at build time. Keep the local fallback so the app
+// continues to work with the backend running on this computer during development.
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 // Token management
 export const tokenManager = {
