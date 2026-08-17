@@ -171,6 +171,8 @@ export const ordersAPI = {
 
   getById: (id: string) => apiCall(`/orders/${id}`, { method: "GET" }),
 
+  getItems: (id: string) => apiCall(`/orders/${id}/items`, { method: "GET" }),
+
   create: (data: {
     order_id: string;
     customer_name: string;
