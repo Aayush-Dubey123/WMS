@@ -393,6 +393,18 @@ class CRUDItem:
             logging.error(f"Error in CRUDItem.get_items_by_ticket: {error}")
             raise
 
+    async def get_items_by_order(self, order_id: str) -> list[dict]:
+        """Retrieve all item units attached to an order_id (populated on reservation)."""
+        try:
+            logging.info(f"Executing CRUDItem.get_items_by_order: {order_id}")
+            db = MongoDatabase()
+            cursor = db.items.find({"order_id": order_id}).sort("barcode", 1)
+            docs = await cursor.to_list(length=1000)
+            return [_format_item_doc(doc) for doc in docs]
+        except Exception as error:
+            logging.error(f"Error in CRUDItem.get_items_by_order: {error}")
+            raise
+
     async def update_status_by_ticket(self, ticket_id: str, status_value: str) -> int:
         """Update status for all items attached to a ticket_id (except damaged items)."""
         try:
@@ -614,12 +626,12 @@ class CRUDTicket:
             raise
 
     async def get_by_id(self, id: str) -> dict | None:
-        """Retrieve ticket document by unique MongoDB ObjectId hex string."""
+        """Retrieve ticket document by unique string ID or ticket_id string."""
         try:
             logging.info(f"Executing CRUDTicket.get_by_id: {id}")
             db = MongoDatabase()
-            query_id = ObjectId(id) if ObjectId.is_valid(id) else id
-            doc = await db.tickets.find_one({"_id": query_id})
+            filter_doc = {"_id": ObjectId(id)} if ObjectId.is_valid(id) else {"ticket_id": id}
+            doc = await db.tickets.find_one(filter_doc)
             return _format_ticket_doc(doc) if doc else None
         except Exception as error:
             logging.error(f"Error in CRUDTicket.get_by_id: {error}")

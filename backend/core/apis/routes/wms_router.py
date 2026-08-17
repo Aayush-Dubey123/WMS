@@ -859,6 +859,7 @@ from core.apis.schemas.requests.wms_request import (
     OrderPackRequest,
 )
 from core.apis.schemas.responses.wms_response import (
+    ItemListResponse,
     OrderListResponse,
     OrderResponse,
     PicklistResponse,
@@ -938,6 +939,39 @@ async def get_order(
         raise
     except Exception as error:
         logging.error(f"Error in GET /orders/{id} endpoint: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error),
+        )
+
+
+@order_router.get(
+    "/{id}/items",
+    status_code=status.HTTP_200_OK,
+    response_model=ItemListResponse,
+)
+async def get_order_items(
+    id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Retrieve the physical item units reserved against an order, with live
+    storage_location, so staff can find the stock without leaving the order page.
+
+    Returns an empty list for orders that have not been reserved yet.
+
+    STAFF/MANAGER: 404 if order is outside their assigned warehouse.
+    OWNER: unrestricted.
+    """
+    try:
+        logging.info(f"Calling GET /orders/{id}/items endpoint by {current_user.get('email')}")
+        response = await OrderController().get_order_items(id=id, current_user=current_user)
+        return ItemListResponse(**response)
+    except HTTPException as httperror:
+        logging.error(f"Error in GET /orders/{id}/items endpoint: {httperror}")
+        raise
+    except Exception as error:
+        logging.error(f"Error in GET /orders/{id}/items endpoint: {error}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(error),

@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { storageAPI, ticketsAPI, warehousesAPI } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/warehouses")({
   head: () => ({
@@ -74,10 +75,13 @@ type Ticket = {
 
 type CreateForm = { code: string; name: string; address: string };
 type EditForm = { name: string; address: string };
+type LocationForm = { zone: string; rack: string; bin: string };
 
 function WarehousesPageContent() {
   const { hasRole } = useAuth();
   const canManage = hasRole(["OWNER"]);
+  const canManageLocations = hasRole(["OWNER", "MANAGER"]);
+  const queryClient = useQueryClient();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateForm>({ code: "", name: "", address: "" });
@@ -89,6 +93,10 @@ function WarehousesPageContent() {
   const [isEditing, setIsEditing] = useState(false);
 
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("");
+
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [locationForm, setLocationForm] = useState<LocationForm>({ zone: "", rack: "", bin: "" });
+  const [isCreatingLocation, setIsCreatingLocation] = useState(false);
 
   const {
     data: warehousesData,
@@ -168,6 +176,34 @@ function WarehousesPageContent() {
       toast.error(error instanceof Error ? error.message : "Failed to update warehouse");
     } finally {
       setIsEditing(false);
+    }
+  };
+
+  const onCreateLocationSubmit = async () => {
+    if (!selectedWarehouseId) {
+      toast.error("Select a warehouse first");
+      return;
+    }
+    if (!locationForm.zone.trim() || !locationForm.rack.trim() || !locationForm.bin.trim()) {
+      toast.error("Zone, rack and bin are required");
+      return;
+    }
+    setIsCreatingLocation(true);
+    try {
+      await storageAPI.create({
+        warehouse_id: selectedWarehouseId,
+        zone: locationForm.zone.trim(),
+        rack: locationForm.rack.trim(),
+        bin: locationForm.bin.trim(),
+      });
+      toast.success("Storage location created");
+      setLocationOpen(false);
+      setLocationForm({ zone: "", rack: "", bin: "" });
+      queryClient.invalidateQueries({ queryKey: ["storage-locations", selectedWarehouseId] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create storage location");
+    } finally {
+      setIsCreatingLocation(false);
     }
   };
 
@@ -255,6 +291,15 @@ function WarehousesPageContent() {
                       </option>
                     ))}
                   </Select>
+                )}
+                {canManageLocations && (
+                  <Btn
+                    variant="secondary"
+                    disabled={!selectedWarehouseId}
+                    onClick={() => setLocationOpen(true)}
+                  >
+                    <Plus className="size-4" /> Add Location
+                  </Btn>
                 )}
               </div>
             }
@@ -417,6 +462,58 @@ function WarehousesPageContent() {
             </Btn>
             <Btn onClick={onEditSubmit} disabled={isEditing}>
               {isEditing && <Loader2 className="size-4 animate-spin" />} Save Changes
+            </Btn>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={locationOpen} onOpenChange={setLocationOpen}>
+        <DialogContent className="shadow-e3 sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Add Storage Location</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="label-xs text-secondary-foreground">Zone *</label>
+              <Field
+                className="mt-1"
+                placeholder="A"
+                value={locationForm.zone}
+                onChange={(e) => setLocationForm((f) => ({ ...f, zone: e.target.value }))}
+                disabled={isCreatingLocation}
+              />
+            </div>
+            <div>
+              <label className="label-xs text-secondary-foreground">Rack *</label>
+              <Field
+                className="mt-1"
+                placeholder="04"
+                value={locationForm.rack}
+                onChange={(e) => setLocationForm((f) => ({ ...f, rack: e.target.value }))}
+                disabled={isCreatingLocation}
+              />
+            </div>
+            <div>
+              <label className="label-xs text-secondary-foreground">Bin *</label>
+              <Field
+                className="mt-1"
+                placeholder="12"
+                value={locationForm.bin}
+                onChange={(e) => setLocationForm((f) => ({ ...f, bin: e.target.value }))}
+                disabled={isCreatingLocation}
+              />
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Creates location code {locationForm.zone || "A"}-{locationForm.rack || "04"}-{locationForm.bin || "12"} for{" "}
+            {warehouses.find((w) => w.id === selectedWarehouseId)?.code ?? "the selected warehouse"}.
+          </p>
+          <DialogFooter className="gap-3">
+            <Btn variant="secondary" onClick={() => setLocationOpen(false)} disabled={isCreatingLocation}>
+              Cancel
+            </Btn>
+            <Btn onClick={onCreateLocationSubmit} disabled={isCreatingLocation}>
+              {isCreatingLocation && <Loader2 className="size-4 animate-spin" />} Add Location
             </Btn>
           </DialogFooter>
         </DialogContent>
