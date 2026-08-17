@@ -26,10 +26,12 @@ interface Message {
   timestamp: Date;
 }
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+
 // API client for chatbot
 const chatbotAPI = {
   async sendMessage(conversationId: string, userInput: string, token: string) {
-    const response = await fetch("http://127.0.0.1:8000/chat/message", {
+    const response = await fetch(`${API_BASE}/chat/message`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -50,7 +52,7 @@ const chatbotAPI = {
 
   async getHistory(conversationId: string, token: string) {
     const response = await fetch(
-      `http://127.0.0.1:8000/chat/history/${conversationId}`,
+      `${API_BASE}/chat/history/${conversationId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
