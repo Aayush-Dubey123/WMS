@@ -37,6 +37,7 @@ class Settings(BaseSettings):
 
     DOMAIN: str = "localhost:8000"
     BASE_URL: str = "http://localhost:8000"
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:8000,http://127.0.0.1:8000,http://127.0.0.1:5173"
 
     model_config = SettingsConfigDict(
         env_file=".env",
