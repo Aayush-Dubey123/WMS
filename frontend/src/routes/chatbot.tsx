@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Send, Loader2, MessageCircle, X } from "lucide-react";
+import { Send, Loader2, MessageCircle, X, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/wms/app-shell";
+import { Panel } from "@/components/wms/ui-bits";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,34 +143,37 @@ function ChatbotContent() {
 
   return (
     <AppShell crumbs={[{ label: "Dashboard", to: "/" }, { label: "AI Assistant" }]} title="Warehouse AI Assistant">
-      <div className="mx-auto max-w-2xl">
-        {/* Chat Container */}
-        <div className="flex h-[600px] flex-col rounded-xl border border-border bg-card shadow-e2 overflow-hidden">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left Column: Chat Container */}
+        <div className="lg:col-span-2 flex flex-col h-fit bg-white border border-[var(--wf-border)] rounded-xl shadow-sm overflow-hidden">
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto space-y-4 p-6">
+          <div className="overflow-y-auto space-y-4 p-6 bg-[#FAF6F0]/30 max-h-[480px]">
             {messages.map((msg, idx) => (
               <div
                 key={idx}
                 className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-xs rounded-lg px-4 py-2.5 ${
-                    msg.type === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground border border-border"
+                  style={{
+                    backgroundColor: msg.type === "user" ? "var(--wf-orange)" : "#fff",
+                    color: msg.type === "user" ? "#fff" : "var(--wf-dark)",
+                    borderColor: msg.type === "user" ? "transparent" : "var(--wf-border)",
+                  }}
+                  className={`max-w-[80%] rounded-xl px-4 py-3 border shadow-sm ${
+                    msg.type === "user" ? "rounded-tr-none" : "rounded-tl-none"
                   }`}
                 >
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                  <p className="text-xs mt-1 opacity-70">
-                    {msg.timestamp.toLocaleTimeString()}
+                  <p className="text-[10px] mt-1.5 opacity-70 font-semibold text-right">
+                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
               </div>
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-secondary text-secondary-foreground rounded-lg px-4 py-2.5 border border-border">
-                  <Loader2 className="size-5 animate-spin text-primary" />
+                <div className="bg-white rounded-xl px-4 py-3 border border-[var(--wf-border)] shadow-sm rounded-tl-none">
+                  <Loader2 className="size-4 animate-spin text-[var(--wf-orange)]" />
                 </div>
               </div>
             )}
@@ -177,7 +181,7 @@ function ChatbotContent() {
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-border bg-surface-hover p-4">
+          <div className="border-t border-[var(--wf-border)] bg-[#FAF6F0] p-4">
             <form onSubmit={handleSendMessage} className="flex gap-3">
               <Input
                 type="text"
@@ -185,12 +189,19 @@ function ChatbotContent() {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 disabled={isLoading}
-                className="flex-1 bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20"
+                style={{
+                  border: "1px solid var(--wf-border)",
+                }}
+                className="flex-1 bg-white text-[var(--wf-dark)] placeholder:text-[#7A7A6E] focus:border-[var(--wf-orange)] focus:ring-0 outline-none h-11 rounded-lg text-sm"
               />
               <Button
                 type="submit"
                 disabled={isLoading || !inputValue.trim()}
-                className="bg-primary hover:brightness-110 text-primary-foreground disabled:opacity-50"
+                style={{
+                  backgroundColor: "var(--wf-orange)",
+                  color: "#fff",
+                }}
+                className="hover:brightness-110 text-white disabled:opacity-50 h-11 px-5 rounded-lg font-bold flex items-center justify-center border-0 cursor-pointer"
               >
                 {isLoading ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -202,27 +213,96 @@ function ChatbotContent() {
           </div>
         </div>
 
-        {/* Info Box */}
-        <div className="mt-6 rounded-lg border border-info/25 bg-info/5 p-4">
-          <div className="flex gap-3">
-            <MessageCircle className="size-5 text-info flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-foreground">
-              <p className="font-semibold text-info mb-1">Assistant Capabilities:</p>
-              <ul className="space-y-1 text-xs">
-                <li>• <span className="text-muted-foreground">Search orders by ID, customer, or status</span></li>
-                <li>• <span className="text-muted-foreground">Check inventory by barcode or location</span></li>
-                <li>• <span className="text-muted-foreground">View pending approvals (Manager/Owner)</span></li>
-                <li>• <span className="text-muted-foreground">Search audit logs (Owner only)</span></li>
-                <li>• <span className="text-muted-foreground">Get SOP guidance for receiving, packing, shipping</span></li>
-              </ul>
+        {/* Right Column: Capabilities & Context Panels */}
+        <div className="space-y-4 lg:col-span-1">
+          {/* Assistant Capabilities */}
+          <Panel style={{ background: "#fff", border: "1px solid var(--wf-border)", padding: "16px 20px" }} className="shadow-sm rounded-xl">
+            <div className="flex items-center gap-2.5 mb-4 border-b border-[var(--wf-border)] pb-3">
+              <div style={{ background: "var(--wf-orange-pale)", color: "var(--wf-orange)" }} className="p-2 rounded-lg">
+                <MessageCircle className="size-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-base text-[var(--wf-dark)] font-outfit">AI Capabilities</h3>
+                <p className="text-[10px] text-muted-foreground">What you can ask the assistant</p>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* User Info */}
-        <div className="mt-6 text-xs text-muted-foreground">
-          <p>Role: <span className="text-foreground font-semibold capitalize">{user?.role}</span></p>
-          <p>Scope: <span className="text-foreground">{user?.warehouse_id ? `Warehouse ${user.warehouse_id}` : 'Global'}</span></p>
+            <ul className="space-y-3">
+              {[
+                { title: "Search orders by ID", desc: "Instantly check logs or fulfillment statuses." },
+                { title: "Check inventory", desc: "Lookup counts by item barcode or bay location." },
+                { title: "View approvals", desc: "Access review items queue (Owner/Manager)." },
+                { title: "Search audit logs", desc: "Track system access transactions (Owner only)." },
+                { title: "SOP guidance", desc: "Get detailed instructions for receiving or shipping." },
+              ].map((cap, i) => (
+                <li key={i} className="flex gap-2 items-start">
+                  <span className="size-1.5 rounded-full bg-[var(--wf-orange)] mt-1.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold text-[var(--wf-dark)] leading-tight">{cap.title}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{cap.desc}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+
+          {/* Quick Suggestions Starter */}
+          <Panel style={{ background: "#fff", border: "1px solid var(--wf-border)", padding: "16px 20px" }} className="shadow-sm rounded-xl">
+            <h4 className="text-xs font-extrabold text-[var(--wf-dark)] font-outfit uppercase tracking-wider mb-3">
+              Quick Suggestions
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {[
+                "Fulfillment SOP receiving",
+                "Identify pending approvals",
+                "Check Reno warehouse capacity",
+                "Search audit log recent",
+              ].map((promptText) => (
+                <button
+                  key={promptText}
+                  onClick={() => setInputValue(promptText)}
+                  style={{ border: "1px solid var(--wf-border)" }}
+                  className="px-3 py-2 rounded-lg bg-[#FAF6F0] hover:bg-[var(--wf-orange-pale)] text-xs text-[var(--wf-dark-secondary)] hover:text-[var(--wf-orange)] font-semibold transition-all duration-150 text-left w-full flex items-center justify-between cursor-pointer"
+                >
+                  <span>"{promptText}"</span>
+                  <ChevronRight size={12} className="opacity-60" />
+                </button>
+              ))}
+            </div>
+          </Panel>
+
+          {/* Session Scope Details */}
+          <Panel style={{ background: "#fff", border: "1px solid var(--wf-border)", padding: "16px 20px" }} className="shadow-sm rounded-xl">
+            <h4 className="text-xs font-extrabold text-[var(--wf-dark)] font-outfit uppercase tracking-wider mb-3">
+              Operator Scope
+            </h4>
+            <div className="space-y-2.5 text-xs">
+              <div className="flex justify-between py-1 border-b border-[#FAF6F0]">
+                <span className="text-muted-foreground">Active Role</span>
+                <span className="font-bold text-[var(--wf-orange)] bg-[var(--wf-orange-pale)] px-2 py-0.5 rounded text-[10px]">
+                  {user?.role || "OWNER"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#FAF6F0]">
+                <span className="text-muted-foreground">Facility Limit</span>
+                <span className="font-bold text-[var(--wf-dark)]">
+                  {user?.warehouse_id ? `Warehouse ${user.warehouse_id}` : "Global (All Warehouses)"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#FAF6F0]">
+                <span className="text-muted-foreground">Experience Tier</span>
+                <span className="font-bold text-[var(--wf-dark)]">
+                  {user?.experience_tier || "EXPERIENCED"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-muted-foreground">Account Status</span>
+                <span className="font-bold text-green-700">
+                  {user?.status || "active"}
+                </span>
+              </div>
+            </div>
+          </Panel>
         </div>
       </div>
     </AppShell>
