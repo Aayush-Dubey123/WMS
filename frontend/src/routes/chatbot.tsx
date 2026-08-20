@@ -26,7 +26,7 @@ interface Message {
   timestamp: Date;
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env['VITE_API_BASE_URL'] || "http://127.0.0.1:8000";
 
 // API client for chatbot
 const chatbotAPI = {
