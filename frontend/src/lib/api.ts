@@ -49,7 +49,7 @@ async function apiCall<T>(
   // Handle 401 - Unauthorized
   if (response.status === 401) {
     tokenManager.clearTokens();
-    window.location.href = "/login";
+    window.location.href = "/landing";
     throw new Error("Unauthorized - please login again");
   }
 

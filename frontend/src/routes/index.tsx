@@ -29,6 +29,7 @@ import { StatusBadge } from "@/components/wms/status-badge";
 import { Btn, Panel, TableShell, Td, Th, Tr } from "@/components/wms/ui-bits";
 import { reportsAPI, approvalsAPI, ordersAPI, ticketsAPI, warehousesAPI } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -1011,24 +1012,11 @@ function DashboardContent() {
 }
 
 function Dashboard() {
-  const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate({ to: "/landing" });
-    }
-  }, [isLoading, isAuthenticated, navigate]);
-
-  if (isLoading || !isAuthenticated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FAF6F0]">
-        <Loader2 className="mx-auto size-8 animate-spin text-[var(--wf-orange)]" />
-      </div>
-    );
-  }
-
-  return <DashboardContent />;
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
+  );
 }
 
 // Custom cn utility inside route component to guarantee standalone resolving

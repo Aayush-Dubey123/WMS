@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -52,6 +52,9 @@ const DEMO_CREDENTIALS = [
 ];
 
 export const Route = createFileRoute("/login")({
+  beforeLoad: () => {
+    throw redirect({ to: "/landing" });
+  },
   head: () => ({
     meta: [
       { title: "Login — Whitfield WMS" },
