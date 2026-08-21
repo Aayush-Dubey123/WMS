@@ -143,11 +143,11 @@ function ChatbotContent() {
 
   return (
     <AppShell crumbs={[{ label: "Dashboard", to: "/" }, { label: "AI Assistant" }]} title="Warehouse AI Assistant">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 items-start">
         {/* Left Column: Chat Container */}
-        <div className="lg:col-span-2 flex flex-col h-fit bg-white border border-[var(--wf-border)] rounded-xl shadow-sm overflow-hidden">
+        <div className="lg:col-span-2 flex flex-col bg-white border border-[var(--wf-border)] rounded-xl shadow-sm overflow-hidden">
           {/* Messages Area */}
-          <div className="overflow-y-auto space-y-4 p-6 bg-[#FAF6F0]/30 max-h-[480px]">
+          <div className="overflow-y-auto space-y-4 p-4 sm:p-6 bg-[#FAF6F0]/30" style={{ maxHeight: "min(480px, 60vh)" }}>
             {messages.map((msg, idx) => (
               <div
                 key={idx}
@@ -159,7 +159,7 @@ function ChatbotContent() {
                     color: msg.type === "user" ? "#fff" : "var(--wf-dark)",
                     borderColor: msg.type === "user" ? "transparent" : "var(--wf-border)",
                   }}
-                  className={`max-w-[80%] rounded-xl px-4 py-3 border shadow-sm ${
+                  className={`max-w-[85%] sm:max-w-[80%] rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 border shadow-sm ${
                     msg.type === "user" ? "rounded-tr-none" : "rounded-tl-none"
                   }`}
                 >
@@ -181,8 +181,8 @@ function ChatbotContent() {
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-[var(--wf-border)] bg-[#FAF6F0] p-4">
-            <form onSubmit={handleSendMessage} className="flex gap-3">
+          <div className="border-t border-[var(--wf-border)] bg-[#FAF6F0] p-3 sm:p-4">
+            <form onSubmit={handleSendMessage} className="flex gap-2 sm:gap-3">
               <Input
                 type="text"
                 placeholder="Ask about orders, inventory, approvals..."
@@ -201,7 +201,7 @@ function ChatbotContent() {
                   backgroundColor: "var(--wf-orange)",
                   color: "#fff",
                 }}
-                className="hover:brightness-110 text-white disabled:opacity-50 h-11 px-5 rounded-lg font-bold flex items-center justify-center border-0 cursor-pointer"
+                className="hover:brightness-110 text-white disabled:opacity-50 h-11 px-4 sm:px-5 rounded-lg font-bold flex items-center justify-center border-0 cursor-pointer shrink-0"
               >
                 {isLoading ? (
                   <Loader2 className="size-4 animate-spin" />

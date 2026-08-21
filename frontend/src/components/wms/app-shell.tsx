@@ -315,10 +315,19 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-[#FAF6F0]">
+      {/* ─── MOBILE SIDEBAR OVERLAY ─── */}
+      {open && (
+        <div
+          className="fixed inset-0 z-20 bg-black/30 lg:hidden"
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ─── HEADER ─── */}
-      <header className="fixed inset-x-0 top-0 z-40 grid grid-cols-3 h-16 items-center border-b border-[var(--wf-border)] bg-white px-4 lg:px-6">
-        {/* Left Column: Mobile Menu & Logo */}
-        <div className="flex items-center gap-3 flex-1 overflow-visible">
+      <header className="fixed inset-x-0 top-0 z-40 grid grid-cols-[auto_1fr_auto] h-16 items-center border-b border-[var(--wf-border)] bg-white px-4 lg:px-6">
+        {/* Left Column: Mobile Menu & Logo + Truck animation */}
+        <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
           <button
             aria-label="Toggle navigation"
             onClick={() => setOpen((v) => !v)}
@@ -347,9 +356,9 @@ export function AppShell({
             </div>
           </Link>
 
-          {/* Branded logistics micro-animation */}
-          <div className="hidden lg:flex items-center flex-1 ml-5 mr-3 relative h-10 overflow-visible select-none pointer-events-none">
-            {/* Premium Warehouse Icon with loading shutters */}
+          {/* Branded logistics micro-animation — visible for ALL roles on sm+ screens */}
+          <div className="hidden sm:flex items-center flex-1 ml-2 lg:ml-5 mr-2 lg:mr-3 relative h-10 overflow-hidden select-none pointer-events-none min-w-0">
+            {/* Premium Warehouse Icon */}
             <div className="shrink-0 flex items-end mr-1">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400 shrink-0">
                 <path d="M3 10 L12 4 L21 10 L21 20 L3 20 Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -360,7 +369,7 @@ export function AppShell({
             </div>
 
             {/* The Path Container */}
-            <div className="relative flex-1 h-10 overflow-visible mx-2">
+            <div className="relative flex-1 h-10 overflow-hidden mx-1 min-w-0">
               {/* Background dashed path */}
               <div className="absolute left-0 right-0 bottom-[19px] h-0.5 border-b border-dashed border-[var(--wf-orange)]/25" />
 
@@ -421,7 +430,7 @@ export function AppShell({
         </div>
 
         {/* Middle Column: Globally Centered Search */}
-        <div className="hidden md:flex justify-center w-full">
+        <div className="hidden md:flex justify-center w-full px-2">
           <form onSubmit={handleSearch} className="relative w-full max-w-lg">
             <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <input
@@ -429,7 +438,7 @@ export function AppShell({
               type="text"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              placeholder="Search orders, tickets... (e.g. ORD-123 or RNO-001)"
+              placeholder="Search orders, tickets..."
               style={{
                 fontFamily: "'Inter', sans-serif",
                 border: "1px solid var(--wf-border)",
@@ -437,14 +446,14 @@ export function AppShell({
               }}
               className="h-10 w-full rounded-lg text-sm text-foreground transition-all duration-150 outline-none placeholder:text-[#7A7A6E] py-2 pl-10 pr-16 hover:bg-[#F0E9DD] focus:border-[var(--wf-orange)] focus:ring-2 focus:ring-[var(--wf-orange)]/20 focus:bg-white"
             />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-muted-foreground bg-[#FAF6F0] border border-[var(--wf-border)] px-1.5 py-0.5 rounded pointer-events-none">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-muted-foreground bg-[#FAF6F0] border border-[var(--wf-border)] px-1.5 py-0.5 rounded pointer-events-none hidden lg:block">
               Ctrl /
             </div>
           </form>
         </div>
 
         {/* Right Column: Actions (Notifications, Selector, Profile) */}
-        <div className="flex items-center gap-3 justify-end">
+        <div className="flex items-center gap-1 sm:gap-3 justify-end">
           {/* Notifications */}
           <button
             aria-label="Notifications"
@@ -566,9 +575,9 @@ export function AppShell({
           isCollapsed ? "lg:pl-20" : "lg:pl-64"
         )}
       >
-        <div className="page-enter mx-auto max-w-[1440px] px-6 py-6">
+        <div className="page-enter mx-auto max-w-[1440px] px-3 py-4 sm:px-6 sm:py-6">
           {(crumbs.length > 0 || title) && (
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               <nav className="flex items-center py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 {crumbs.map((c, i) => (
                   <span key={c.label} className="flex items-center">
@@ -585,11 +594,11 @@ export function AppShell({
               </nav>
               <div className="flex flex-wrap items-center justify-between gap-3 mt-1">
                 {title && (
-                  <h1 className="text-2xl font-outfit font-extrabold text-[var(--wf-dark)] tracking-tight">
+                  <h1 className="text-xl sm:text-2xl font-outfit font-extrabold text-[var(--wf-dark)] tracking-tight">
                     {title}
                   </h1>
                 )}
-                {actions && <div className="flex flex-wrap items-center gap-3">{actions}</div>}
+                {actions && <div className="flex flex-wrap items-center gap-2 sm:gap-3">{actions}</div>}
               </div>
             </div>
           )}
