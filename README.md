@@ -66,6 +66,7 @@ To address Dan Whitfield's requirements, the **Eigi - WMS Software** was built f
 * **Order Pipeline:** Tracks orders through `PENDING` ➔ `PICKING` ➔ `PACKED` ➔ `SHIPPED`.
 * **Box Measurement & Labeling Workflow:** Streamlines box weight and dimension logging to minimize the 1-2 day outbound delay.
 
+
 ### 4. 📜 Immutable Audit Trail & History
 * **Full Accountability:** Every inventory adjustment, order status update, ticket creation, and system login is recorded in an immutable audit ledger.
 * **Audit Metadata:** Captures `timestamp`, `user_id`, `facility_id`, `action`, `target_collection`, `old_value`, and `new_value`.
