@@ -25,6 +25,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { DemoLoginNoticeModal } from "@/components/wms/demo-login-notice-modal";
+import { useDemoLogin } from "@/lib/use-demo-login";
 
 export const Route = createFileRoute("/landing")({
   head: () => ({
@@ -198,10 +200,24 @@ const PREVIEW_SCREENS = [
 function LandingPage() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading, login: authLogin } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedDemo, setSelectedDemo] = useState<number | null>(null);
+  const [isFormLoading, setIsFormLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState<"signin" | "demo">("signin");
+
+  const {
+    isLoading: isDemoLoading,
+    selectedDemo,
+    demoModalOpen,
+    demoStatus,
+    demoErrorMessage,
+    demoRoleName,
+    elapsedSeconds,
+    handleDemoLogin,
+    handleCloseModal,
+    handleRetry,
+  } = useDemoLogin(DEMO_CREDENTIALS);
+
+  const isLoading = isFormLoading || isDemoLoading;
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -232,7 +248,7 @@ function LandingPage() {
   }, [isAuthenticated, authLoading, navigate]);
 
   const onSubmit = async (data: LoginFormValues) => {
-    setIsLoading(true);
+    setIsFormLoading(true);
     try {
       await authLogin(data.email, data.password);
       toast.success("Signed in successfully!", {
@@ -242,26 +258,7 @@ function LandingPage() {
       const msg = error instanceof Error ? error.message : "Login failed. Please try again.";
       toast.error(msg);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async (index: number) => {
-    setSelectedDemo(index);
-    setIsLoading(true);
-    const cred = DEMO_CREDENTIALS[index]!;
-    try {
-      await authLogin(cred.email, cred.password);
-      toast.success(`Welcome, ${cred.role}!`, {
-        icon: <CheckCircle2 className="size-4" />,
-      });
-    } catch (error) {
-      const msg =
-        error instanceof Error ? error.message : `Login failed for ${cred.role}.`;
-      toast.error(msg);
-      setSelectedDemo(null);
-    } finally {
-      setIsLoading(false);
+      setIsFormLoading(false);
     }
   };
 
@@ -2300,6 +2297,15 @@ function LandingPage() {
           }
         }
       `}</style>
+      <DemoLoginNoticeModal
+        isOpen={demoModalOpen}
+        onClose={handleCloseModal}
+        roleName={demoRoleName}
+        status={demoStatus}
+        errorMessage={demoErrorMessage}
+        onRetry={handleRetry}
+        elapsedSeconds={elapsedSeconds}
+      />
     </div>
   );
 }

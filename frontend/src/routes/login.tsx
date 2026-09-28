@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
+import { DemoLoginNoticeModal } from "@/components/wms/demo-login-notice-modal";
+import { useDemoLogin } from "@/lib/use-demo-login";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -67,10 +69,24 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading, login: authLogin } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedDemo, setSelectedDemo] = useState<number | null>(null);
+  const [isFormLoading, setIsFormLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const {
+    isLoading: isDemoLoading,
+    selectedDemo,
+    demoModalOpen,
+    demoStatus,
+    demoErrorMessage,
+    demoRoleName,
+    elapsedSeconds,
+    handleDemoLogin,
+    handleCloseModal,
+    handleRetry,
+  } = useDemoLogin(DEMO_CREDENTIALS, () => setShowSuccess(true));
+
+  const isLoading = isFormLoading || isDemoLoading;
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -98,7 +114,7 @@ function LoginPage() {
       return;
     }
 
-    setIsLoading(true);
+    setIsFormLoading(true);
     try {
       await authLogin(data.email, data.password);
       setShowSuccess(true);
@@ -111,30 +127,7 @@ function LoginPage() {
       toast.error(errorMessage);
       console.error("Login error:", error);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async (index: number) => {
-    setSelectedDemo(index);
-    const cred = DEMO_CREDENTIALS[index]!;
-    setIsLoading(true);
-    try {
-      console.log(`🔐 Attempting ${cred.role} login with ${cred.email}...`);
-      await authLogin(cred.email, cred.password);
-      console.log(`✅ Login successful for ${cred.role}`);
-      setShowSuccess(true);
-      toast.success(`Welcome, ${cred.role}!`, {
-        icon: <CheckCircle2 className="size-4" />,
-      });
-    } catch (error) {
-      console.error(`❌ Login failed for ${cred.role}:`, error);
-      const errorMessage =
-        error instanceof Error ? error.message : `Login failed for ${cred.role}. Check backend credentials.`;
-      toast.error(errorMessage);
-      setSelectedDemo(null);
-    } finally {
-      setIsLoading(false);
+      setIsFormLoading(false);
     }
   };
 
@@ -766,6 +759,15 @@ function LoginPage() {
           }
         }
       `}</style>
+      <DemoLoginNoticeModal
+        isOpen={demoModalOpen}
+        onClose={handleCloseModal}
+        roleName={demoRoleName}
+        status={demoStatus}
+        errorMessage={demoErrorMessage}
+        onRetry={handleRetry}
+        elapsedSeconds={elapsedSeconds}
+      />
     </div>
   );
 }
