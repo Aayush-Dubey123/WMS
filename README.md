@@ -14,7 +14,7 @@ A warehouse operations platform designed to replace fragile spreadsheet workflow
 
 ## The problem
 
-Whitfield Fulfillment operates across two warehouses and previously relied on Excel for inventory and order workflows. The system was designed to address duplicate stock entries, concurrent inventory edits, missing auditability, outbound bottlenecks and granular access-control requirements. citeturn9file0
+Whitfield Fulfillment operates across two warehouses and previously relied on Excel for inventory and order workflows. The system was designed to address duplicate stock entries, concurrent inventory edits, missing auditability, outbound bottlenecks and granular access-control requirements. 
 
 ## The solution
 
