@@ -9,7 +9,7 @@
 
 // VITE_ variables are set at build time. Keep the local fallback so the app
 // continues to work with the backend running on this computer during development.
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env['VITE_API_BASE_URL'] || "http://127.0.0.1:8000";
 
 // Token management
 export const tokenManager = {
@@ -51,7 +51,7 @@ async function apiCall<T>(
   // Handle 401 - Unauthorized
   if (response.status === 401) {
     tokenManager.clearTokens();
-    window.location.href = "/login";
+    window.location.href = "/landing";
     throw new Error("Unauthorized - please login again");
   }
 

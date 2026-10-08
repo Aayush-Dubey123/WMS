@@ -26,7 +26,7 @@ const FAQ = [
     a: "Create an order, then click 'Reserve'. The system atomically reserves matching STORED items. Concurrent reservation conflicts return HTTP 409 — retry or adjust the order.",
   },
   {
-    q: "What is the Voice Pipeline?",
+    q: "What is Voice Assistance?",
     a: "Staff can upload an audio clip describing a parcel. The system transcribes it, extracts item details via LLM, and creates a draft for confirmation — hands-free scanning.",
   },
   {

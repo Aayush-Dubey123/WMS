@@ -30,7 +30,7 @@ export function ProtectedRoute({
 
     // Not authenticated - redirect to login
     if (!isAuthenticated) {
-      navigate({ to: "/login" });
+      navigate({ to: "/landing" });
       return;
     }
 

@@ -12,7 +12,7 @@ import { ticketsAPI, voiceAPI } from "@/lib/api";
 export const Route = createFileRoute("/voice")({
   head: () => ({
     meta: [
-      { title: "Voice Data Entry — Whitfield WMS" },
+      { title: "Voice Assistance — Whitfield WMS" },
       {
         name: "description",
         content:
@@ -206,8 +206,8 @@ function VoiceContent() {
 
   return (
     <AppShell
-      crumbs={[{ label: "Dashboard", to: "/" }, { label: "Voice Pipeline" }]}
-      title="Voice Data Entry"
+      crumbs={[{ label: "Dashboard", to: "/" }, { label: "Voice Assistance" }]}
+      title="Voice Assistance"
     >
       <div className="mb-4">
         <label className="label-xs text-secondary-foreground">Target Ticket *</label>

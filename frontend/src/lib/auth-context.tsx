@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const profile = await authAPI.getProfile();
+      const profile = (await authAPI.getProfile()) as AuthUser;
       setUser(profile);
     } catch (error) {
       tokenManager.clearTokens();
@@ -53,16 +53,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function login(email: string, password: string) {
-    const response = await authAPI.login(email, password);
+    const response = (await authAPI.login(email, password)) as {
+      access_token: string;
+      refresh_token: string;
+    };
     tokenManager.setTokens(response.access_token, response.refresh_token);
-    const profile = await authAPI.getProfile();
+    const profile = (await authAPI.getProfile()) as AuthUser;
     setUser(profile);
   }
 
   function logout() {
     tokenManager.clearTokens();
     setUser(null);
-    window.location.href = "/login";
+    window.location.href = "/landing";
   }
 
   function hasRole(role: UserRole | UserRole[]) {

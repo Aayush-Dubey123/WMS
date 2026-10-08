@@ -38,7 +38,9 @@ from core.database.database import close_mongo_connection, connect_to_mongo
 from core.database.init_db import init_db
 
 logging = logger(__name__)
-UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
+UPLOAD_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "uploads")
+)
 
 
 @asynccontextmanager

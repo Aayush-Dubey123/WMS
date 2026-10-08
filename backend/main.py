@@ -1,16 +1,6 @@
-"""
-main.py — Application entry point.
-
-Run with:
-    python main.py
-    OR
-    uvicorn main:app --reload --port 8000
-
-The import here is intentionally minimal — all setup happens inside api.py.
-main.py is only the launcher.
-"""
 from dotenv import load_dotenv
-load_dotenv()   # must run before chatbot_controller is imported
+
+load_dotenv()  # must run before chatbot_controller is imported
 
 import uvicorn
 
