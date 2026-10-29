@@ -104,7 +104,6 @@ export function useDemoLogin(
   return {
     isLoading,
     selectedDemo,
-    setSelectedDemo,
     demoModalOpen,
     demoStatus,
     demoErrorMessage,
