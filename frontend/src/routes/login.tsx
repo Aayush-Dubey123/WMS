@@ -76,7 +76,6 @@ function LoginPage() {
   const {
     isLoading: isDemoLoading,
     selectedDemo,
-    setSelectedDemo,
     demoModalOpen,
     demoStatus,
     demoErrorMessage,
